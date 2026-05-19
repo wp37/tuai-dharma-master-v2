@@ -1,0 +1,12 @@
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0a0e14; }
+::-webkit-scrollbar-thumb { background: #3d3520; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #5c5030; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+body { color: #cbd5e1; background-color: #0a0e14; background-image: radial-gradient(at top, #f5a6230a, #0a0e14 60%); min-height: 100vh; margin: 0; padding: 0; font-family: Inter, sans-serif; }
+::selection { color: #f1f5f9; background: #f5a62340; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.animate-spin { animation: 1s linear infinite spin; }
+@keyframes pulseGlow { 0%, to { filter: drop-shadow(0 0 3px #f5a6234d); } 50% { filter: drop-shadow(0 0 8px #f5a62399); } }
+.pulse-glow { animation: 2s ease-in-out infinite pulseGlow; }
