@@ -1,20 +1,83 @@
-import { getNextKey, getKeyCount } from './storage';
+import { getNextKey, getKeyCount, markKeyExhausted, getWorkingKey } from './storage';
 
-// ─── Retry helper with key rotation ───
+// ─── Error classification ───
+const QUOTA_KEYWORDS = ['quota', 'rate limit', 'rate-limit', 'resource exhausted', 'exceeded', '429', 'too many requests'];
+const AUTH_KEYWORDS = ['api key', 'invalid', 'unauthorized', '401', '403', 'permission denied'];
+
+function classifyError(message) {
+  const lower = (message || '').toLowerCase();
+  if (QUOTA_KEYWORDS.some(k => lower.includes(k))) return 'quota';
+  if (AUTH_KEYWORDS.some(k => lower.includes(k))) return 'auth';
+  return 'unknown';
+}
+
+function friendlyError(rawMessage, type) {
+  switch (type) {
+    case 'quota':
+      return '⏳ API đã hết quota (giới hạn miễn phí). Vui lòng chờ vài phút hoặc thêm API Key mới trong Cấu Hình.';
+    case 'auth':
+      return '🔑 API Key không hợp lệ hoặc đã hết hạn. Kiểm tra lại trong Cấu Hình.';
+    default:
+      // Truncate overly long messages
+      if (rawMessage && rawMessage.length > 150) {
+        return '❌ Lỗi API: ' + rawMessage.substring(0, 120) + '...';
+      }
+      return '❌ ' + (rawMessage || 'Lỗi không xác định');
+  }
+}
+
+// ─── Sleep helper ───
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+// ─── Retry helper with key rotation & exponential backoff ───
 async function withKeyRetry(apiCall) {
   const count = getKeyCount();
-  if (count === 0) throw new Error('Chưa có API Key! Vui lòng thêm key trong Cấu hình.');
-  const maxAttempts = Math.min(count, 3);
+  if (count === 0) throw new Error('🔑 Chưa có API Key! Vui lòng thêm key trong ⚙️ Cấu Hình.');
+  
+  const maxAttempts = Math.min(count * 2, 6); // Try each key up to 2 times
   let lastError;
+  let lastErrorType = 'unknown';
+  
   for (let i = 0; i < maxAttempts; i++) {
+    const key = getWorkingKey();
+    if (!key) break; // All keys exhausted
+    
     try {
-      return await apiCall(getNextKey());
+      const result = await apiCall(key);
+      return result;
     } catch (e) {
       lastError = e;
-      if (i < maxAttempts - 1) continue;
+      lastErrorType = classifyError(e.message);
+      
+      if (lastErrorType === 'quota') {
+        // Mark this key as temporarily exhausted
+        markKeyExhausted(key);
+        // Short delay before trying next key
+        if (i < maxAttempts - 1) {
+          await sleep(500 + i * 300);
+        }
+        continue;
+      }
+      
+      if (lastErrorType === 'auth') {
+        // Bad key, mark it and try next
+        markKeyExhausted(key);
+        continue;
+      }
+      
+      // For unknown errors, add a small backoff
+      if (i < maxAttempts - 1) {
+        await sleep(1000 * (i + 1));
+        continue;
+      }
     }
   }
-  throw lastError;
+  
+  // All attempts failed
+  const friendly = friendlyError(lastError?.message, lastErrorType);
+  const error = new Error(friendly);
+  error.errorType = lastErrorType;
+  throw error;
 }
 
 // ─── Gemini AI Text Generation ───
@@ -41,7 +104,8 @@ export async function callGemini(userPrompt, systemPrompt) {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err?.error?.message || `API Error: ${res.status}`);
+      const msg = err?.error?.message || `API Error: ${res.status}`;
+      throw new Error(msg);
     }
 
     const data = await res.json();
@@ -79,7 +143,7 @@ export async function fetchYouTubeData(url) {
 
       // Try to get extended data from YouTube Data API
       if (videoId) {
-        const key = getNextKey();
+        const key = getWorkingKey();
         if (key) {
           try {
             const ytRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoId}&key=${key}`);
