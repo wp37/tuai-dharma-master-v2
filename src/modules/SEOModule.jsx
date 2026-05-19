@@ -46,7 +46,7 @@ export default function SEOModule({ market = 'vn_dharma', initialTopic = '', uiL
       ['primary','secondary','long_tail'].forEach(k => { if (result.keywords[k]) txt += `- ${k}: ${result.keywords[k].join(', ')}\n`; });
     }
     if (result.hashtags) txt += `\n2. HASHTAGS\n${result.hashtags.join(' ')}\n`;
-    if (result.viral_titles) { txt += '\n3. TITLES\n'; result.viral_titles.forEach((t,i) => { txt += `${i+1}. ${t}\n`; }); }
+    if (result.viral_titles) { txt += '\n3. TITLES\n'; result.viral_titles.forEach((title,i) => { txt += `${i+1}. ${title}\n`; }); }
     if (result.video_description?.full_description) txt += `\n4. DESCRIPTION\n${result.video_description.full_description}\n`;
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([txt], { type: 'text/plain;charset=utf-8' }));
@@ -121,10 +121,10 @@ export default function SEOModule({ market = 'vn_dharma', initialTopic = '', uiL
               {Array.isArray(result.viral_titles) && (
                 <div className="bg-[#10141c] border border-slate-700/30 rounded-xl p-4">
                   <h4 className="text-xs font-bold text-amber-400 mb-3 uppercase">⚡ VIRAL TITLES</h4>
-                  <div className="space-y-2">{result.viral_titles.map((t,i) => (
+                  <div className="space-y-2">{result.viral_titles.map((title,i) => (
                     <div key={i} className="flex justify-between items-center bg-[#0a0e14] p-2 rounded border border-slate-700/30">
-                      <span className="text-sm text-white font-medium flex-1">{i+1}. {t}</span>
-                      <button onClick={() => copy(t)} className="text-slate-500 hover:text-white ml-2"><i className="fa-solid fa-copy" /></button>
+                      <span className="text-sm text-white font-medium flex-1">{i+1}. {title}</span>
+                      <button onClick={() => copy(title)} className="text-slate-500 hover:text-white ml-2"><i className="fa-solid fa-copy" /></button>
                     </div>
                   ))}</div>
                 </div>

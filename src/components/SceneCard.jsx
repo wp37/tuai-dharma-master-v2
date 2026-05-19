@@ -21,7 +21,7 @@ const SceneCard = memo(({ seg, idx, uiLang }) => (
             <div className={`text-[10px] font-bold px-2 py-0.5 rounded ${seg.pacing_score >= 8 ? 'bg-green-900/50 text-green-400' : seg.pacing_score >= 5 ? 'bg-amber-900/50 text-amber-400' : 'bg-red-900/50 text-red-400'}`}>
               PACING: {seg.pacing_score}/10
             </div>
-            <div className="text-[9px] text-slate-400 italic flex-1">{seg.pacing_warning || 'Nhịp độ ổn định'}</div>
+            <div className="text-[9px] text-slate-400 italic flex-1">{seg.pacing_warning || (uiLang === 'vi' ? 'Nhịp độ ổn định' : 'Pacing stable')}</div>
           </div>
         )}
         {seg.sfx_music_suggestion && (
@@ -60,13 +60,13 @@ const SceneCard = memo(({ seg, idx, uiLang }) => (
             ))}
             {seg.voice_text && (
               <div className="mt-3 pt-2 border-t border-slate-700/50">
-                <div className="text-[9px] text-slate-500 font-bold mb-1 uppercase">Dẫn truyền:</div>
+                <div className="text-[9px] text-slate-500 font-bold mb-1 uppercase">{uiLang === 'vi' ? 'Dẫn truyền:' : 'Narration:'}</div>
                 <p className="text-xs text-slate-400 italic leading-relaxed text-justify">{seg.voice_text}</p>
               </div>
             )}
           </div>
         ) : (
-          <p className="text-sm text-amber-100 font-medium italic leading-relaxed text-justify">"{seg.chapter_voice_block || seg.voice_text || '(Đọc tiếp...)'}"</p>
+          <p className="text-sm text-amber-100 font-medium italic leading-relaxed text-justify">"{seg.chapter_voice_block || seg.voice_text || (uiLang === 'vi' ? '(Đọc tiếp...)' : '(Continue...)')}"</p>
         )}
 
         {/* Voice Profile */}

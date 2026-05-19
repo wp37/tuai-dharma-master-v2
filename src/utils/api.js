@@ -1,47 +1,62 @@
-import { getRandomKey } from './storage';
-import { showToast } from './toast';
+import { getNextKey, getKeyCount } from './storage';
+
+// ─── Retry helper with key rotation ───
+async function withKeyRetry(apiCall) {
+  const count = getKeyCount();
+  if (count === 0) throw new Error('Chưa có API Key! Vui lòng thêm key trong Cấu hình.');
+  const maxAttempts = Math.min(count, 3);
+  let lastError;
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      return await apiCall(getNextKey());
+    } catch (e) {
+      lastError = e;
+      if (i < maxAttempts - 1) continue;
+    }
+  }
+  throw lastError;
+}
 
 // ─── Gemini AI Text Generation ───
 export async function callGemini(userPrompt, systemPrompt) {
-  const key = getRandomKey();
-  if (!key) throw new Error('Chưa có API Key! Vui lòng thêm key trong Cấu hình.');
+  return withKeyRetry(async (key) => {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+    const body = {
+      contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      generationConfig: {
+        temperature: 0.85,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 65536,
+        responseMimeType: 'application/json',
+      },
+    };
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
-  const body = {
-    contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-    systemInstruction: { parts: [{ text: systemPrompt }] },
-    generationConfig: {
-      temperature: 0.85,
-      topP: 0.95,
-      topK: 40,
-      maxOutputTokens: 65536,
-      responseMimeType: 'application/json',
-    },
-  };
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `API Error: ${res.status}`);
+    }
+
+    const data = await res.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error('Không nhận được phản hồi từ AI.');
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      // Try to extract JSON from markdown code blocks
+      const match = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (match) return JSON.parse(match[1].trim());
+      throw new Error('Không thể phân tích JSON từ AI.');
+    }
   });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `API Error: ${res.status}`);
-  }
-
-  const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error('Không nhận được phản hồi từ AI.');
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    // Try to extract JSON from markdown code blocks
-    const match = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (match) return JSON.parse(match[1].trim());
-    throw new Error('Không thể phân tích JSON từ AI.');
-  }
 }
 
 // ─── YouTube Metadata Fetch ───
@@ -64,7 +79,7 @@ export async function fetchYouTubeData(url) {
 
       // Try to get extended data from YouTube Data API
       if (videoId) {
-        const key = getRandomKey();
+        const key = getNextKey();
         if (key) {
           try {
             const ytRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=${videoId}&key=${key}`);
@@ -89,32 +104,31 @@ export async function fetchYouTubeData(url) {
 
 // ─── Image Generation (Gemini Imagen) ───
 export async function generateImage(prompt, aspectRatio = '16:9') {
-  const key = getRandomKey();
-  if (!key) throw new Error('Chưa có API Key!');
+  return withKeyRetry(async (key) => {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${key}`;
+    const body = {
+      instances: [{ prompt }],
+      parameters: {
+        sampleCount: 1,
+        aspectRatio,
+        safetyFilterLevel: 'BLOCK_MEDIUM_AND_ABOVE',
+      },
+    };
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${key}`;
-  const body = {
-    instances: [{ prompt }],
-    parameters: {
-      sampleCount: 1,
-      aspectRatio,
-      safetyFilterLevel: 'BLOCK_MEDIUM_AND_ABOVE',
-    },
-  };
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `Image API Error: ${res.status}`);
+    }
+
+    const data = await res.json();
+    const b64 = data?.predictions?.[0]?.bytesBase64Encoded;
+    if (!b64) return null;
+    return `data:image/png;base64,${b64}`;
   });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `Image API Error: ${res.status}`);
-  }
-
-  const data = await res.json();
-  const b64 = data?.predictions?.[0]?.bytesBase64Encoded;
-  if (!b64) return null;
-  return `data:image/png;base64,${b64}`;
 }

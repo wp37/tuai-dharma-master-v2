@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'TUAI_DHARMA_MASTER_V2_KEYS';
+let _keyIndex = 0;
 
 export function getKeys() {
   try {
@@ -20,14 +21,21 @@ export function addKey(key) {
 export function removeKey(key) {
   const keys = getKeys().filter(k => k !== key);
   saveKeys(keys);
+  _keyIndex = 0;
   return keys;
 }
 
 export function getKeyCount() { return getKeys().length; }
 
-export function getRandomKey() {
+export function getNextKey() {
   const keys = getKeys();
-  return keys.length > 0 ? keys[Math.floor(Math.random() * keys.length)] : null;
+  if (keys.length === 0) return null;
+  const key = keys[_keyIndex % keys.length];
+  _keyIndex = (_keyIndex + 1) % keys.length;
+  return key;
 }
+
+// Backward compatibility — now uses round-robin instead of random
+export function getRandomKey() { return getNextKey(); }
 
 export function hasKeys() { return getKeys().length > 0; }

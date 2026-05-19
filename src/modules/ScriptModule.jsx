@@ -30,10 +30,9 @@ Khi viết video_prompt, BẮT BUỘC tuân thủ:
 
 OUTPUT JSON with: mode_detected, suggested_style, style_reason, character_lock_prompt, script[] with scene_number, time, section, character, dialogues[], voice_profile, voice_text, word_count, audio_end_time, visual_desc_vi, sfx_music_suggestion, pacing_score, pacing_warning, video_prompt, image_prompt, strategy_note, coppa_disclaimer.`;
 
-export default function ScriptModule({ onScriptGenerated, onAudioRefined, initialTopic = '', uiLang }) {
+export default function ScriptModule({ onScriptGenerated, onAudioRefined, initialTopic = '', uiLang, market, onMarketChange }) {
   const [topic, setTopic] = useState(initialTopic);
   const [durationStr, setDurationStr] = useState('1');
-  const [market, setMarket] = useState('vn_dharma');
   const [style, setStyle] = useState('auto');
   const [dharmaTopic, setDharmaTopic] = useState('karma');
   const [loading, setLoading] = useState(false);
@@ -54,7 +53,7 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
     let timer;
     if (loading) { setMsgIdx(0); timer = setInterval(() => setMsgIdx(i => (i + 1) % loadingMsgs.length), 3000); }
     return () => clearInterval(timer);
-  }, [loading]);
+  }, [loading, uiLang]);
 
   useEffect(() => { if (initialTopic) { setTopic(initialTopic); setSegments([]); setScriptMeta(null); } }, [initialTopic]);
 
@@ -83,7 +82,7 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
       const styleObj = VISUAL_STYLES.find(s => s.id === style);
       const mkt = MARKETS[market] || MARKETS.vn_dharma;
       let styleName = styleObj?.name || 'Auto';
-      const topicObj = DHARMA_TOPICS.find(t => t.id === dharmaTopic);
+      const topicObj = DHARMA_TOPICS.find(dt => dt.id === dharmaTopic);
       const suggestions = TOPIC_SUGGESTIONS[dharmaTopic] || ['Trong chánh niệm'];
       const microCtx = suggestions[Math.floor(Math.random() * suggestions.length)];
       styleName += ` - DHARMA TOPIC: ${topicObj?.label}. MICRO-CONTEXT (CRITICAL): ${microCtx}.`;
@@ -202,7 +201,7 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
               <label className="text-xs font-bold text-slate-400 uppercase mb-2 block flex items-center gap-2">
                 <i className="fa-solid fa-globe text-amber-400" /> {uiLang === 'vi' ? 'THỊ TRƯỜNG' : 'MARKET'}
               </label>
-              <select value={market} onChange={e => setMarket(e.target.value)}
+              <select value={market} onChange={e => onMarketChange(e.target.value)}
                 className="w-full bg-[#0a0e14] border border-slate-700/50 rounded-lg p-3 text-sm text-white outline-none cursor-pointer">
                 {Object.values(MARKETS).map(m => <option key={m.id} value={m.id}>{m.flag} {m.name}</option>)}
               </select>
@@ -216,7 +215,7 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
             </label>
             <select value={dharmaTopic} onChange={e => setDharmaTopic(e.target.value)}
               className="w-full bg-[#0a0e14] border border-teal-500/50 rounded-lg p-3 text-sm text-white outline-none cursor-pointer">
-              {DHARMA_TOPICS.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+              {DHARMA_TOPICS.map(dt => <option key={dt.id} value={dt.id}>{dt.label}</option>)}
             </select>
           </div>
 

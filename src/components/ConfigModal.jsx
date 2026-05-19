@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { addKey, removeKey, getKeys } from '../utils/storage';
 import { showToast } from '../utils/toast';
 
@@ -6,22 +6,24 @@ export default function ConfigModal({ isOpen, onClose, uiLang }) {
   const [keys, setKeys] = useState(getKeys());
   const [newKey, setNewKey] = useState('');
 
+  useEffect(() => { if (isOpen) setKeys(getKeys()); }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleAdd = () => {
     const k = newKey.trim();
     if (!k) return showToast(uiLang === 'vi' ? 'Nhập API Key!' : 'Enter API Key!');
-    if (!k.startsWith('AIza')) return showToast('Key không hợp lệ! (phải bắt đầu bằng AIza)', 'error');
+    if (!k.startsWith('AIza')) return showToast(uiLang === 'vi' ? 'Key không hợp lệ! (phải bắt đầu bằng AIza)' : 'Invalid key! (must start with AIza)', 'error');
     const updated = addKey(k);
     setKeys(updated);
     setNewKey('');
-    showToast('✅ Đã thêm API Key!', 'success');
+    showToast(uiLang === 'vi' ? '✅ Đã thêm API Key!' : '✅ API Key added!', 'success');
   };
 
   const handleRemove = (k) => {
     const updated = removeKey(k);
     setKeys(updated);
-    showToast('Đã xóa key', 'info');
+    showToast(uiLang === 'vi' ? 'Đã xóa key' : 'Key removed', 'info');
   };
 
   return (
@@ -49,8 +51,13 @@ export default function ConfigModal({ isOpen, onClose, uiLang }) {
 
         <div className="space-y-2 max-h-60 overflow-y-auto">
           {keys.length === 0 ? (
-            <div className="text-center text-slate-500 py-6 italic text-sm">
-              {uiLang === 'vi' ? 'Chưa có API Key nào.' : 'No API Keys added.'}
+            <div className="text-center py-6">
+              <p className="text-slate-500 italic text-sm">{uiLang === 'vi' ? 'Chưa có API Key nào.' : 'No API Keys added.'}</p>
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-lg text-amber-400 hover:text-amber-300 text-sm font-semibold transition-all duration-200">
+                <i className="fa-solid fa-arrow-up-right-from-square text-xs" />
+                {uiLang === 'vi' ? 'Lấy API Key tại đây' : 'Get API Key here'}
+              </a>
             </div>
           ) : keys.map((k, i) => (
             <div key={i} className="flex items-center justify-between bg-[#0a0e14] p-3 rounded-lg border border-slate-700/30">

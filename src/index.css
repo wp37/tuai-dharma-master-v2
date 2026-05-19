@@ -10,3 +10,5 @@ body { color: #cbd5e1; background-color: #0a0e14; background-image: radial-gradi
 .animate-spin { animation: 1s linear infinite spin; }
 @keyframes pulseGlow { 0%, to { filter: drop-shadow(0 0 3px #f5a6234d); } 50% { filter: drop-shadow(0 0 8px #f5a62399); } }
 .pulse-glow { animation: 2s ease-in-out infinite pulseGlow; }
+@keyframes slideIn { 0% { opacity: 0; transform: translateY(12px); } 100% { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }

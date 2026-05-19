@@ -16,6 +16,7 @@ export default function App() {
   const [segments, setSegments] = useState([]);
   const [topic, setTopic] = useState('');
   const [initialTopic, setInitialTopic] = useState('');
+  const [market, setMarket] = useState('vn_dharma');
 
   useEffect(() => {
     setKeyCount(getKeyCount());
@@ -44,13 +45,15 @@ export default function App() {
               onAudioRefined={(segs, t) => { setSegments(segs); if (t) setTopic(t); }}
               initialTopic={initialTopic}
               uiLang={uiLang}
+              market={market}
+              onMarketChange={setMarket}
             />
           </div>
           <div style={{ display: tab === 'studio' ? 'block' : 'none' }}>
             <StudioModule segments={segments} topic={topic} uiLang={uiLang} />
           </div>
           <div style={{ display: tab === 'seo' ? 'block' : 'none' }}>
-            <SEOModule initialTopic={initialTopic} uiLang={uiLang} />
+            <SEOModule initialTopic={initialTopic} uiLang={uiLang} market={market} />
           </div>
         </div>
       </main>
