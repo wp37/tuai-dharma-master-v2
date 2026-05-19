@@ -392,6 +392,34 @@ npm run build
 
 ---
 
+## 🚀 Deploy to GitHub + Vercel
+
+```powershell
+# 1. Init git và commit
+git init
+git add -A
+git commit -m "Initial release"
+
+# 2. Tạo repo GitHub và push (cần gh CLI)
+gh repo create <tên-repo> --public --source=. --push
+
+# 3. Deploy lên Vercel (auto-detect Vite)
+npx -y vercel --yes --prod
+
+# 4. Sau khi thay đổi code → push update
+git add -A
+git commit -m "Update: mô tả thay đổi"
+git push origin master
+# Vercel tự động re-deploy khi push GitHub ✅
+```
+
+### Live URLs (hiện tại)
+- **GitHub**: https://github.com/wp37/tuai-dharma-master-v2
+- **Vercel**: https://phatphap-six.vercel.app
+- **Local**: http://localhost:5173/
+
+---
+
 ## 📊 Tech Stack
 
 | Layer | Technology | Version |
@@ -406,3 +434,6 @@ npm run build
 | State | React useState | Built-in |
 | Storage | localStorage | Built-in |
 | Navigation | display:none pattern | CSS |
+| Hosting | Vercel | Free tier |
+| Source | GitHub | Public repo |
+
