@@ -143,6 +143,7 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
       const totalBatches = Math.ceil(sceneCount / BATCH_SIZE);
       let allSegments = [];
       let currentStyle = '';
+      let previousContext = '';
 
       const safeString = (val) => typeof val === 'object' && val !== null ? JSON.stringify(val) : val;
 
@@ -152,7 +153,11 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
         const endScene = Math.min((i + 1) * BATCH_SIZE, sceneCount);
         
         const expectedCount = endScene - startScene + 1;
-        const batchPrompt = `\n\n[BATCH MODE GENERATION (CRITICAL)]: ĐÂY LÀ PHẦN ${i+1}/${totalBatches}. BẠN BẮT BUỘC PHẢI TẠO CHÍNH XÁC ${expectedCount} CẢNH (từ cảnh số ${startScene} đến cảnh số ${endScene}) trong tổng số ${sceneCount} cảnh. VIỆC TẠO THIẾU CẢNH LÀ LỖI RẤT NGHIÊM TRỌNG! Trả về mảng JSON chứa ĐÚNG ${expectedCount} cảnh này.`;
+        let batchPrompt = `\n\n[BATCH MODE GENERATION (CRITICAL)]: ĐÂY LÀ PHẦN ${i+1}/${totalBatches}. BẠN BẮT BUỘC PHẢI TẠO CHÍNH XÁC ${expectedCount} CẢNH (từ cảnh số ${startScene} đến cảnh số ${endScene}) trong tổng số ${sceneCount} cảnh. VIỆC TẠO THIẾU CẢNH LÀ LỖI RẤT NGHIÊM TRỌNG! Trả về mảng JSON chứa ĐÚNG ${expectedCount} cảnh này. MỖI CẢNH PHẢI CÓ ĐẦY ĐỦ CHI TIẾT (Tuyệt đối không được viết tắt, không được để trống trường dialogues, voice_text, video_prompt, visual_desc_vi).`;
+
+        if (previousContext) {
+          batchPrompt += `\n\n[BỐI CẢNH CỦA BATCH TRƯỚC (ĐỂ VIẾT TIẾP MẠCH TRUYỆN)]:\n${previousContext}\n-> HÃY DỰA VÀO ĐÂY ĐỂ VIẾT TIẾP NỘI DUNG!`;
+        }
 
         const res = await callGemini(
           `TOPIC: "${topic}"\nDURATION: ${duration}m\nSCENE_COUNT: ${sceneCount}\nTARGET_MARKET: ${mkt.name}\nNATIVE_LANGUAGE: ${mkt.voice_lang}\nCULTURAL_CONTEXT: ${mkt.culture}\nVISUAL_STYLE: ${styleName}\n[ANTI-REPETITION SEED]: ${seed}${characterPrompt}${batchPrompt}\n\nCRITICAL INSTRUCTION:\n1. Write VOICE_TEXT and DIALOGUES in "${mkt.voice_lang}"\n2. DO NOT just translate from Vietnamese.\n3. GENERATE JSON OBJECT.`,
@@ -188,6 +193,11 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
 
         allSegments = [...allSegments, ...segs];
         setSegments([...allSegments]);
+
+        if (segs.length > 0) {
+          const lastSeg = segs[segs.length - 1];
+          previousContext = `Cảnh ${lastSeg.scene_number || endScene}: ${lastSeg.section || ''} - ${lastSeg.visual_desc_vi || lastSeg.visual_desc || ''}. Lời thoại/Đọc cuối: "${lastSeg.voice_text || (lastSeg.dialogues && lastSeg.dialogues[0] && lastSeg.dialogues[0].line) || '...'}"`;
+        }
       }
       
       onScriptGenerated(allSegments, currentStyle, topic);
