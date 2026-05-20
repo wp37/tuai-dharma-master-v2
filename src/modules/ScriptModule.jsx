@@ -81,6 +81,7 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
   const [dharmaTopic, setDharmaTopic] = useState('karma');
   const [charMode, setCharMode] = useState('dialogue');
   const [loading, setLoading] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
   const [segments, setSegments] = useState([]);
   const [scriptMeta, setScriptMeta] = useState(null);
   const [styleSuggestion, setStyleSuggestion] = useState(null);
@@ -123,6 +124,7 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
   const generate = async () => {
     if (!topic) return showToast(uiLang === 'vi' ? 'Vui lòng nhập chủ đề!' : 'Please enter a topic!');
     setSegments([]); setScriptMeta(null); setStyleSuggestion(null); setRefineCount(0); setLoading(true);
+    setBatchProgress({ current: 0, total: 0 });
     try {
       const styleObj = VISUAL_STYLES.find(s => s.id === style);
       const mkt = MARKETS[market] || MARKETS.vn_dharma;
@@ -137,24 +139,59 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
         ? `\n\n[CHARACTER MODE: MONOLOGUE (1 NGUOI NÓI XUYÊN SUỐT)]\n- Toàn bộ kịch bản CHỈ CÓ DUY NHẤT 1 nhân vật/giọng đọc nói xuyên suốt toàn bộ phân cảnh (ví dụ: Người dẫn chuyện hoặc Thiền sư).\n- Giọng đọc mang tính độc thoại, tự sự, chiêm nghiệm sâu sắc.\n- Bắt buộc ghi nhận duy nhất 1 nhân vật trong trường "character" của toàn bộ phân cảnh.`
         : `\n\n[CHARACTER MODE: DIALOGUE (2 NHÂN VẬT THAY PHIÊN)]\n- Kịch bản là cuộc đối thoại sinh động hoặc luân phiên nói giữa 2 nhân vật xuyên suốt (ví dụ: Học trò/Phật tử trẻ lo âu và Thiền sư/Sư thầy tĩnh tại).\n- Phải có sự phân chia giọng đọc rõ ràng giữa 2 nhân vật ở các phân cảnh để tạo cấu trúc đối thoại sinh động (ví dụ: Học trò hỏi ở Hook/Problem, Sư thầy giảng ở Teaching/Transformation).`;
 
-      const res = await callGemini(
-        `TOPIC: "${topic}"\nDURATION: ${duration}m\nSCENE_COUNT: ${sceneCount}\nTARGET_MARKET: ${mkt.name}\nNATIVE_LANGUAGE: ${mkt.voice_lang}\nCULTURAL_CONTEXT: ${mkt.culture}\nVISUAL_STYLE: ${styleName}\n[ANTI-REPETITION SEED]: ${seed}${characterPrompt}\n\nCRITICAL INSTRUCTION:\n1. Write VOICE_TEXT and DIALOGUES in "${mkt.voice_lang}"\n2. DO NOT just translate from Vietnamese.\n3. GENERATE JSON OBJECT.`,
-        SCRIPT_SYSTEM_PROMPT
-      );
+      const BATCH_SIZE = 5;
+      const totalBatches = Math.ceil(sceneCount / BATCH_SIZE);
+      let allSegments = [];
+      let currentStyle = '';
 
-      let segs = res.script || (Array.isArray(res) ? res : []);
-      if (styleObj && styleObj.id !== 'auto' && styleObj.prompt_enforce) {
+      const safeString = (val) => typeof val === 'object' && val !== null ? JSON.stringify(val) : val;
+
+      for (let i = 0; i < totalBatches; i++) {
+        setBatchProgress({ current: i + 1, total: totalBatches });
+        const startScene = i * BATCH_SIZE + 1;
+        const endScene = Math.min((i + 1) * BATCH_SIZE, sceneCount);
+        
+        const batchPrompt = `\n\n[BATCH MODE GENERATION (CRITICAL)]: ĐÂY LÀ PHẦN ${i+1}/${totalBatches}. BẠN CHỈ ĐƯỢC TẠO CÁC CẢNH TỪ CẢNH SỐ ${startScene} ĐẾN CẢNH SỐ ${endScene} trong tổng số ${sceneCount} cảnh. Trả về mảng JSON chứa các cảnh này (vẫn giữ đúng cấu trúc Narrative Arc).`;
+
+        const res = await callGemini(
+          `TOPIC: "${topic}"\nDURATION: ${duration}m\nSCENE_COUNT: ${sceneCount}\nTARGET_MARKET: ${mkt.name}\nNATIVE_LANGUAGE: ${mkt.voice_lang}\nCULTURAL_CONTEXT: ${mkt.culture}\nVISUAL_STYLE: ${styleName}\n[ANTI-REPETITION SEED]: ${seed}${characterPrompt}${batchPrompt}\n\nCRITICAL INSTRUCTION:\n1. Write VOICE_TEXT and DIALOGUES in "${mkt.voice_lang}"\n2. DO NOT just translate from Vietnamese.\n3. GENERATE JSON OBJECT.`,
+          SCRIPT_SYSTEM_PROMPT
+        );
+
+        let segs = res.script || (Array.isArray(res) ? res : []);
+        if (!Array.isArray(segs)) segs = [];
+
         segs = segs.map(s => ({
           ...s,
-          video_prompt: s.video_prompt?.includes('Visual Style:') ? s.video_prompt : `${s.video_prompt} ${styleObj.prompt_enforce}`,
-          image_prompt: s.image_prompt?.includes('Visual Style:') ? s.image_prompt : `${s.image_prompt} ${styleObj.prompt_enforce}`,
+          visual_desc_vi: safeString(s.visual_desc_vi),
+          visual_desc: safeString(s.visual_desc),
+          sfx_music_suggestion: safeString(s.sfx_music_suggestion),
+          section: safeString(s.section),
+          voice_text: safeString(s.voice_text),
+          chapter_voice_block: safeString(s.chapter_voice_block),
+          pacing_warning: safeString(s.pacing_warning)
         }));
+
+        if (styleObj && styleObj.id !== 'auto' && styleObj.prompt_enforce) {
+          segs = segs.map(s => ({
+            ...s,
+            video_prompt: typeof s.video_prompt === 'string' && s.video_prompt.includes('Visual Style:') ? s.video_prompt : `${safeString(s.video_prompt) || ''} ${styleObj.prompt_enforce}`,
+            image_prompt: typeof s.image_prompt === 'string' && s.image_prompt.includes('Visual Style:') ? s.image_prompt : `${safeString(s.image_prompt) || ''} ${styleObj.prompt_enforce}`,
+          }));
+        }
+
+        if (i === 0) {
+          setScriptMeta(res);
+          currentStyle = res.suggested_style || '';
+        }
+
+        allSegments = [...allSegments, ...segs];
+        setSegments([...allSegments]);
       }
-      setScriptMeta(res);
-      setSegments(segs);
-      onScriptGenerated(segs, res.suggested_style || '', topic);
+      
+      onScriptGenerated(allSegments, currentStyle, topic);
     } catch (e) { showToast(e.message, 'error'); }
-    finally { setLoading(false); }
+    finally { setLoading(false); setBatchProgress({ current: 0, total: 0 }); }
   };
 
   const refineAudio = async () => {
@@ -308,7 +345,7 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
           {/* Generate button */}
           <button onClick={generate} disabled={loading || refining}
             className="w-full py-4 bg-teal-900/50 hover:bg-teal-800/50 border border-teal-500/30 text-teal-100 font-bold rounded-xl shadow-[0_0_20px_rgba(20,184,166,0.15)] flex items-center justify-center gap-2 transition-all disabled:opacity-50">
-            {loading ? <><i className="fa-solid fa-sync animate-spin" /> {loadingMsgs[msgIdx]}</>
+            {loading ? <><i className="fa-solid fa-sync animate-spin" /> {batchProgress.total > 0 ? (uiLang === 'vi' ? `Đang tạo phần ${batchProgress.current}/${batchProgress.total}...` : `Generating batch ${batchProgress.current}/${batchProgress.total}...`) : loadingMsgs[msgIdx]}</>
               : <><i className="fa-solid fa-paper-plane" /> {uiLang === 'vi' ? 'KIẾN TẠO KỊCH BẢN CHỮA LÀNH' : 'GENERATE HEALING SCRIPT'}</>}
           </button>
 
