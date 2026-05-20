@@ -25,14 +25,14 @@ phatphap/
 │   │
 │   ├── modules/                  # ── Feature Modules (Nghiệp vụ chính) ──
 │   │   ├── SpyModule.jsx         # Tab 1: YouTube competitor analysis
-│   │   ├── ScriptModule.jsx      # Tab 2: AI script generator
-│   │   ├── StudioModule.jsx      # Tab 3: Prompt viewer + Image gen
+│   │   ├── ScriptModule.jsx      # Tab 2: AI script generator (V2.0)
+│   │   ├── StudioModule.jsx      # Tab 3: Prompt viewer + Image gen + 6 Export types
 │   │   └── SEOModule.jsx         # Tab 4: SEO optimization suite
 │   │
 │   ├── config/                   # ── Cấu hình (THAY ĐỔI KHI CLONE) ──
 │   │   ├── markets.js            # Target markets / languages
 │   │   ├── styles.js             # Visual styles + Topics + Suggestions
-│   │   ├── prompts.js            # AI system prompts (SPY, SEO, STYLE, AUDIO)
+│   │   ├── prompts.js            # AI system prompts (SPY, SEO, STYLE, AUDIO V17)
 │   │   └── i18n.js               # UI strings (VI/EN) + SEO Checklist
 │   │
 │   └── utils/                    # ── Tiện ích (KHÔNG CẦN THAY ĐỔI) ──
@@ -161,10 +161,13 @@ Tính năng:
 Input:  YouTube URL
 Process: fetchYouTubeData() → callGemini(SPY_PROMPT)
 Output: {
-  revenue_analysis  → CPM, RPM, Earnings, Tier
+  revenue_analysis  → CPM, RPM, Earnings, Tier + Monetization Opportunities
   strengths[]       → Point, Impact, Evidence
   weaknesses[]      → Point, Impact, Fix
-  audio_strategy    → Voice, Music, SFX, Hooks
+  audio_strategy    → Voice, Music, SFX, Hooks, Frequency Tuning
+  retention_curve   → Drop-off points, Retention boosters  ← MỚI V2
+  ab_test_suggestions → Title/Thumbnail A/B variants       ← MỚI V2
+  content_repurposing → Shorts, Podcast, Blog, Social      ← MỚI V2
   viral_suggestions → Hook titles + outlines
 }
 ```
@@ -173,7 +176,7 @@ Output: {
 
 ---
 
-### 8. `src/modules/ScriptModule.jsx` — Tab 2: Story Weaver ★ CORE
+### 8. `src/modules/ScriptModule.jsx` — Tab 2: Story Weaver ★ CORE (V2.0)
 
 **Vai trò**: Tạo kịch bản AI với style selection, market targeting.
 
@@ -187,7 +190,7 @@ Inputs:
 
 Process:
 1. Build prompt with topic + duration + market + style + seed
-2. callGemini(prompt, SCRIPT_SYSTEM_PROMPT)
+2. callGemini(prompt, SCRIPT_SYSTEM_PROMPT V2.0)
 3. Post-process: inject style prompt_enforce
 4. Display scenes via SceneCard
 
@@ -197,11 +200,23 @@ Outputs:
 └── Pass to → StudioModule, SEOModule
 
 Tính năng phụ:
-├── AI Style Suggest → callGemini(STYLE_SUGGEST_PROMPT)
-├── Audio Refine V16 → callGemini(AUDIO_REFINE_PROMPT)
+├── AI Style Suggest → callGemini(STYLE_SUGGEST_PROMPT) — ĐÃ FIX STYLE IDs
+├── Audio Refine V17 → callGemini(AUDIO_REFINE_PROMPT V17.0)
 ├── Open Project     → Import .json
 └── Copy Voice All   → Clipboard
 ```
+
+**Nâng cấp V2.0 (SCRIPT_SYSTEM_PROMPT):**
+
+| Tính năng | V1 | V2 |
+|-----------|----|----|
+| Anatomy Safeguard | Inject vào MỌI scene (kể cả hoa sen, sóng biển) | Phân biệt HUMAN-SHIELD vs NATURE-SHIELD |
+| Video Prompt Format | 2 format không nhất quán | Unified format `[[CAMERA_TYPE, MOVEMENT], ...]` |
+| Image Prompt | Để trống cho nhiều scenes | BẮT BUỘC cho MỌI scene |
+| Camera Movement | Chỉ có shot type | Shot type + Movement (PAN, DOLLY, CRANE...) |
+| Narrative Arc | Không có cấu trúc | 6 sections: HOOK→PROBLEM→TEACHING→TRANSFORMATION→RESOLUTION→CTA |
+| Character System | Không nhất quán | CHARACTER_LOCK xuyên suốt |
+| SFX/Music | Mô tả chung | 3 lớp: Ambient Bed + ASMR + Emotional Punctuation |
 
 **Công thức tính**:
 - `sceneCount = ceil(duration * 60 / 8)` — mỗi scene 8 giây
@@ -211,38 +226,58 @@ Tính năng phụ:
 
 ---
 
-### 9. `src/modules/StudioModule.jsx` — Tab 3: Dharma Studio
+### 9. `src/modules/StudioModule.jsx` — Tab 3: Dharma Studio (V2.0)
 
-**Vai trò**: Xem prompt + tạo ảnh AI + xuất file.
+**Vai trò**: Xem prompt + tạo ảnh AI + xuất file (6 loại).
 
 ```
 Modes: VIDEO (16:9) | IMAGE (1:1)
 
 Tính năng:
-├── Xem prompt từng scene
+├── Xem prompt từng scene (video_prompt / image_prompt)
 ├── Copy prompt → clipboard
 ├── Generate Image → Imagen 3.0 API
-├── Export JSON (project file)
-└── Export CSV (script data)
+│
+└── 📦 EXPORT SYSTEM (6 loại file):
+    ├── 1. Tải Dự Án (.json)     → Full project file (import lại được)
+    ├── 2. Excel Kịch Bản (.csv) → 19 columns đầy đủ (Scene→Image Prompt)
+    ├── 3. Excel Prompt Video     → CSV: Scene + Video Prompt
+    ├── 4. Excel Prompt Ảnh       → CSV: Scene + Image Prompt
+    ├── 5. TXT Prompt Video       → Plain text, mỗi prompt cách 1 dòng trống
+    └── 6. TXT Prompt Ảnh         → Plain text, mỗi prompt cách 1 dòng trống
+
+Filename Format: {topic_slug}_{type}_{DD-MM-YYYY_HHMM}.{ext}
+Ví dụ: luat_nhan_qua_prompt_video_20-05-2026_0925.csv
+```
+
+**Excel Kịch Bản CSV — 19 Columns:**
+```
+Scene | Time | Section | Character | Voice | Speaker | Gender | Age |
+Accent | Timbre | Tone | Pacing | Speed | Words | End Time | State |
+Audio SFX ASMR Music | Video Prompt | Image Prompt
 ```
 
 **Khi clone**: Thay watermark text, thêm format export.
 
 ---
 
-### 10. `src/modules/SEOModule.jsx` — Tab 4: Viral SEO
+### 10. `src/modules/SEOModule.jsx` — Tab 4: Viral SEO (V2.0)
 
 **Vai trò**: Tối ưu SEO cho YouTube video.
 
 ```
 Input:  Topic + Market
 Output: {
-  keywords      → Primary, Secondary, Long-tail
-  hashtags      → Platform-optimized
-  viral_titles  → CTR-optimized titles
-  description   → Full video description
-  thumbnail_suggestions → AI image prompts
-  engagement_comments   → Pin comment, CTA
+  keywords         → Primary, Secondary, Long-tail + Competitor Gap + Trending  ← MỚI
+  trending_score   → Topic heat, Search volume, Best posting window             ← MỚI
+  hashtags         → Platform-optimized
+  viral_titles     → 5 CTR-optimized titles (tăng từ 2)
+  description      → Full video description + timestamps
+  thumbnail_suggestions → AI image prompts (2 concepts)
+  cross_platform   → TikTok, Facebook, Instagram optimization                  ← MỚI
+  series_strategy  → Playlist name + next episodes + SEO                        ← MỚI
+  posting_schedule → Best day/time + frequency + reasoning                      ← MỚI
+  engagement_comments → Pin comment, CTA, community post                        ← MỚI
 }
 
 Tính năng phụ:
@@ -275,18 +310,41 @@ DHARMA_TOPICS = [{ id, label }]                       // 5 topics
 TOPIC_SUGGESTIONS = { topic_id: [suggestions...] }    // Micro-context
 ```
 
+**10 Visual Styles:**
+| ID | Tên | Mô tả |
+|----|-----|-------|
+| ancient_stone_relic | 🪨 Thánh Tích Khắc Đá | Tượng đá cổ, rêu phong, ánh sáng huyền bí |
+| molten_gold_nirvana | ✨ Niết Bàn Vàng Ròng | Vàng nung chảy, hào quang giác ngộ |
+| cosmic_yin_yang | 🌀 Pháp Luân Thiên Hà | Vũ trụ âm dương, cân bằng năng lượng |
+| zen_ink_wash | 🍃 Kinh Diệp Lục | Lá bồ đề xanh, thiên nhiên tĩnh lặng |
+| lotus_ice | ❄️ Băng Hóa Liên Hoa | Hoa sen băng giá, tinh khiết |
+| tea_incense | 🫖 Trà Đạo Khói Trầm | Trà đạo, khói trầm hương, tĩnh tại |
+| paradise_flowers | 🌺 Kinh Vạn Hoa Thiên Thai | Vạn hoa thiên thai, cảnh tiên |
+| moonlit_lotus | 🪷 Hồ Sen Trăng Ngọc | Hồ sen ánh trăng ngọc bích |
+| terracotta_temple | 🏺 Tượng Đất Nung Thổ | Đất nung, gỗ mộc, thiền môn |
+| shadow_dance | 🎭 Vũ Điệu Bóng Rầm | Múa bóng, ánh sáng bóng tối huyền ảo |
+
 **Khi clone**: ĐÂY LÀ FILE QUAN TRỌNG NHẤT. Thay toàn bộ styles/topics cho niche mới.
 
 ---
 
-### 13. `src/config/prompts.js` — AI Prompts
+### 13. `src/config/prompts.js` — AI Prompts (V2.0)
 
 ```javascript
-SPY_PROMPT           → Phân tích competitor
-SEO_PROMPT           → Tối ưu SEO
-STYLE_SUGGEST_PROMPT → AI đề xuất style
-AUDIO_REFINE_PROMPT  → Tinh chỉnh thanh âm V16.0
+SPY_PROMPT           → Phân tích competitor + Retention Curve + A/B Testing + Content Repurposing
+SEO_PROMPT           → Tối ưu SEO + Cross-Platform + Series Strategy + Posting Schedule
+STYLE_SUGGEST_PROMPT → AI đề xuất style (ĐÃ FIX STYLE IDs khớp styles.js) + Mood/Lighting/Color
+AUDIO_REFINE_PROMPT  → Tinh chỉnh thanh âm V17.0 + Emotional Arc + Silence Beats + Audio Layering
 ```
+
+**Nâng cấp V2.0:**
+
+| Prompt | V1 | V2 |
+|--------|----|----|
+| SPY | 6 analysis sections | 9 sections + monetization + repurposing |
+| SEO | Keywords + Titles + Description | + Cross-platform + Series + Schedule + Trending |
+| STYLE | 6 style IDs SAI | 10 style IDs ĐÚNG + mood/lighting/color |
+| AUDIO | V16 - 3 sections | V17 - 7 sections + emotional arc + silence beats + 3-layer audio |
 
 **Khi clone**: Thay toàn bộ prompts cho niche mới. Giữ format JSON output.
 
@@ -359,16 +417,60 @@ Khi muốn clone sang niche mới, thay đổi theo thứ tự:
 |---|------|-------------|--------|
 | 1 | `config/styles.js` | Visual styles, topics, suggestions | 🔴 BẮT BUỘC |
 | 2 | `config/prompts.js` | Tất cả AI prompts | 🔴 BẮT BUỘC |
-| 3 | `config/i18n.js` | UI labels, checklist | 🟡 NÊN LÀM |
-| 4 | `config/markets.js` | Target markets | 🟡 NÊN LÀM |
-| 5 | `components/Header.jsx` | App name, tagline | 🟡 NÊN LÀM |
-| 6 | `components/Sidebar.jsx` | Tab names, icons | 🟡 NÊN LÀM |
-| 7 | `index.html` | Title, meta, colors | 🟡 NÊN LÀM |
-| 8 | `utils/storage.js` | STORAGE_KEY string | 🟢 NHỎ |
-| 9 | `modules/StudioModule.jsx` | Watermark text | 🟢 NHỎ |
-| 10 | `package.json` | Package name | 🟢 NHỎ |
+| 3 | `modules/ScriptModule.jsx` | SCRIPT_SYSTEM_PROMPT | 🔴 BẮT BUỘC |
+| 4 | `config/i18n.js` | UI labels, checklist | 🟡 NÊN LÀM |
+| 5 | `config/markets.js` | Target markets | 🟡 NÊN LÀM |
+| 6 | `components/Header.jsx` | App name, tagline | 🟡 NÊN LÀM |
+| 7 | `components/Sidebar.jsx` | Tab names, icons | 🟡 NÊN LÀM |
+| 8 | `index.html` | Title, meta, colors | 🟡 NÊN LÀM |
+| 9 | `utils/storage.js` | STORAGE_KEY string | 🟢 NHỎ |
+| 10 | `modules/StudioModule.jsx` | Watermark text | 🟢 NHỎ |
+| 11 | `package.json` | Package name | 🟢 NHỎ |
 
 **KHÔNG cần thay đổi**: `api.js`, `toast.js`, `App.jsx` (cấu trúc), `ConfigModal.jsx`, `SceneCard.jsx`
+
+---
+
+## 📦 EXPORT SYSTEM (6 Loại File)
+
+| # | Tên | Format | Nội dung | Icon |
+|---|-----|--------|----------|------|
+| 1 | Tải Dự Án | `.json` | Full project (import lại được) | 📄 amber |
+| 2 | Excel Kịch Bản | `.csv` | 19 columns đầy đủ | 📊 green |
+| 3 | Excel Prompt Video | `.csv` | Scene + Video Prompt | 📊 green |
+| 4 | Excel Prompt Ảnh | `.csv` | Scene + Image Prompt | 📊 green |
+| 5 | TXT Prompt Video | `.txt` | Plain text prompts | 📝 blue |
+| 6 | TXT Prompt Ảnh | `.txt` | Plain text prompts | 📝 blue |
+
+**Filename Convention**: `{topic_slug}_{type}_{DD-MM-YYYY_HHMM}.{ext}`
+
+---
+
+## 🛡️ PROMPT ANATOMY SAFEGUARD SYSTEM
+
+### Vấn đề V1 đã fix:
+- ❌ V1: `(perfect human anatomy:1.2)` inject vào cảnh sóng biển, hoa sen, hạt giống → AI tạo hình quái dị
+- ✅ V2: Phân biệt HUMAN-SHIELD vs NATURE-SHIELD
+
+### Quy tắc V2:
+```
+Scene CÓ NGƯỜI → [HUMAN-SHIELD] + "(perfect human anatomy:1.2), exactly two arms..."
+Scene KHÔNG CÓ NGƯỜI → [NATURE-SHIELD] + KHÔNG có anatomy tags
+```
+
+### Ví dụ:
+```
+✅ ĐÚNG (cảnh có người):
+[[CLOSE-UP SHOT, GENTLE DOLLY IN], An elderly monk sits in meditation...
+[HUMAN-SHIELD]. (perfect human anatomy:1.2), exactly two arms, exactly two legs...]
+
+✅ ĐÚNG (cảnh thiên nhiên):
+[[WIDE SHOT, SLOW PAN LEFT], A crystal-clear stream flows through forest...
+[NATURE-SHIELD]. Sharp object borders, organic natural movement only.]
+
+❌ SAI (V1 - đã fix):
+A beautiful lotus flower (perfect human anatomy:1.2), exactly two arms, exactly two legs...
+```
 
 ---
 
@@ -423,7 +525,7 @@ git push origin master
 ## 📊 Tech Stack
 
 | Layer | Technology | Version |
-|-------|-----------|---------|
+|-------|-----------| --------|
 | Framework | React | 19.x |
 | Bundler | Vite | 6.x |
 | Styling | Tailwind CSS | CDN |
@@ -437,3 +539,16 @@ git push origin master
 | Hosting | Vercel | Free tier |
 | Source | GitHub | Public repo |
 
+---
+
+## 📝 Changelog
+
+### V2.0 (20-05-2026)
+- ✅ **SCRIPT_SYSTEM_PROMPT V2.0**: Anatomy Safeguard, Narrative Arc, Character Lock, Camera Vocabulary
+- ✅ **SPY_PROMPT**: +Retention Curve, +A/B Testing, +Content Repurposing, +Monetization
+- ✅ **SEO_PROMPT**: +Cross-Platform, +Series Strategy, +Posting Schedule, +Trending Score
+- ✅ **STYLE_SUGGEST_PROMPT**: Fix 6 style IDs sai → 10 IDs đúng, +Mood/Lighting/Color
+- ✅ **AUDIO_REFINE V17.0**: +Emotional Arc, +Silence Beats, +3-Layer Audio, +Voice Transitions
+- ✅ **Export System**: 2 → 6 loại file (JSON, Excel Kịch Bản, Excel/TXT Prompt Video/Ảnh)
+- ✅ **Excel Kịch Bản**: 6 → 19 columns (thêm voice profile, SFX, timing)
+- ✅ **Filename Convention**: Thêm timestamp `{topic}_{type}_{DD-MM-YYYY_HHMM}.{ext}`

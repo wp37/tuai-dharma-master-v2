@@ -40,16 +40,51 @@ export default function StudioModule({ segments, topic = '', uiLang }) {
     finally { setGen(null); }
   };
 
+  const getTimestamp = () => {
+    const now = new Date();
+    return `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+  };
+  const slug = (topic||'script').replace(/\s+/g,'_');
+
   const expCSV = () => {
-    let c = '\uFEFFScene,Time,Section,Voice,Video Prompt,Image Prompt\n';
-    segments.forEach((s, i) => { c += `${i+1},"${s.time}","${s.section}","${(s.voice_text||'').replace(/"/g,'""')}","${(s.video_prompt||'').replace(/"/g,'""')}","${(s.image_prompt||'').replace(/"/g,'""')}"\n`; });
-    dl(c, `${(topic||'script').replace(/\s+/g,'_')}_export.csv`, 'text/csv;charset=utf-8;');
+    let c = '\uFEFFScene,Time,Section,Character,Voice,Speaker,Gender,Age,Accent,Timbre,Tone,Pacing,Speed,Words,End Time,State,Audio SFX ASMR Music,Video Prompt,Image Prompt\n';
+    segments.forEach((s, i) => {
+      const vp = s.voice_profile || {};
+      c += `${i+1},"${s.time||''}","${s.section||''}","${(s.character||'').replace(/"/g,'""')}","${(s.voice_text||'').replace(/"/g,'""')}","${(vp.speaker||s.character||'').replace(/"/g,'""')}","${vp.gender||''}","${vp.age||''}","${vp.accent||''}","${vp.timbre||''}","${vp.tone||''}","${vp.pacing||''}","${vp.pacing_speed||''}","${s.word_count||''}","${s.audio_end_time||''}","${vp.state||''}","${(s.sfx_music_suggestion||'').replace(/"/g,'""')}","${(s.video_prompt||'').replace(/"/g,'""')}","${(s.image_prompt||'').replace(/"/g,'""')}"\n`;
+    });
+    dl(c, `${slug}_kich_ban_${getTimestamp()}.csv`, 'text/csv;charset=utf-8;');
     setMenu(false);
   };
 
   const expJSON = () => {
-    dl(JSON.stringify({ version: '1.0', topic, segments }, null, 2), `${(topic||'project').replace(/\s+/g,'_')}.json`, 'application/json');
+    dl(JSON.stringify({ version: '2.0', topic, segments }, null, 2), `${slug}_${getTimestamp()}.json`, 'application/json');
     setMenu(false); showToast('✅ Exported!', 'success');
+  };
+
+  const expPromptVideoCSV = () => {
+    let c = '\uFEFFScene,Video Prompt\n';
+    segments.forEach((s, i) => { c += `${i+1},"${(s.video_prompt||'').replace(/"/g,'""')}"\n`; });
+    dl(c, `${slug}_prompt_video_${getTimestamp()}.csv`, 'text/csv;charset=utf-8;');
+    setMenu(false);
+  };
+
+  const expPromptImageCSV = () => {
+    let c = '\uFEFFScene,Image Prompt\n';
+    segments.forEach((s, i) => { c += `${i+1},"${(s.image_prompt||'').replace(/"/g,'""')}"\n`; });
+    dl(c, `${slug}_prompt_image_${getTimestamp()}.csv`, 'text/csv;charset=utf-8;');
+    setMenu(false);
+  };
+
+  const expPromptVideoTXT = () => {
+    const txt = segments.map(s => s.video_prompt || '').join('\n\n');
+    dl(txt, `${slug}_prompt_video_${getTimestamp()}.txt`, 'text/plain;charset=utf-8;');
+    setMenu(false);
+  };
+
+  const expPromptImageTXT = () => {
+    const txt = segments.map(s => s.image_prompt || '').join('\n\n');
+    dl(txt, `${slug}_prompt_image_${getTimestamp()}.txt`, 'text/plain;charset=utf-8;');
+    setMenu(false);
   };
 
   if (!segments.length) return (
@@ -77,9 +112,13 @@ export default function StudioModule({ segments, topic = '', uiLang }) {
             <button onClick={()=>setMenu(!menu)} className="px-4 py-1.5 rounded text-xs font-bold flex items-center gap-2 bg-green-900/40 text-green-300 border border-green-500/20">
               <i className="fa-solid fa-download"/> {uiLang === 'vi' ? 'Tải' : 'Export'} ▾
             </button>
-            {menu&&<div className="absolute right-0 top-full mt-2 w-44 bg-[#12161e] border border-slate-700/30 rounded-xl shadow-xl z-50">
-              <button onClick={expJSON} className="w-full text-left px-4 py-2 text-xs text-amber-300 hover:bg-slate-800/20 border-b border-slate-700/30"><i className="fa-solid fa-file-code text-amber-500 mr-2"/>{uiLang === 'vi' ? 'Dự Án (.json)' : 'Project (.json)'}</button>
-              <button onClick={expCSV} className="w-full text-left px-4 py-2 text-xs text-slate-300 hover:bg-slate-800/20"><i className="fa-solid fa-file-excel text-green-500 mr-2"/>{uiLang === 'vi' ? 'Excel Kịch Bản' : 'Excel Script'}</button>
+            {menu&&<div className="absolute right-0 top-full mt-2 w-52 bg-[#12161e] border border-slate-700/30 rounded-xl shadow-xl z-50 overflow-hidden">
+              <button onClick={expJSON} className="w-full text-left px-4 py-2.5 text-xs text-amber-300 hover:bg-slate-800/30 border-b border-slate-700/30 flex items-center gap-2"><i className="fa-solid fa-file-code text-amber-500"/>{uiLang === 'vi' ? 'Tải Dự Án (.json)' : 'Project (.json)'}</button>
+              <button onClick={expCSV} className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-800/30 border-b border-slate-700/30 flex items-center gap-2"><i className="fa-solid fa-file-excel text-green-500"/>{uiLang === 'vi' ? 'Excel Kịch Bản' : 'Excel Script'}</button>
+              <button onClick={expPromptVideoCSV} className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-800/30 border-b border-slate-700/30 flex items-center gap-2"><i className="fa-solid fa-file-excel text-green-500"/>{uiLang === 'vi' ? 'Excel Prompt Video' : 'Excel Video Prompts'}</button>
+              <button onClick={expPromptImageCSV} className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-800/30 border-b border-slate-700/30 flex items-center gap-2"><i className="fa-solid fa-file-excel text-green-500"/>{uiLang === 'vi' ? 'Excel Prompt Ảnh' : 'Excel Image Prompts'}</button>
+              <button onClick={expPromptVideoTXT} className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-800/30 border-b border-slate-700/30 flex items-center gap-2"><i className="fa-solid fa-file-lines text-blue-400"/>{uiLang === 'vi' ? 'TXT Prompt Video' : 'TXT Video Prompts'}</button>
+              <button onClick={expPromptImageTXT} className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-800/30 flex items-center gap-2"><i className="fa-solid fa-file-lines text-blue-400"/>{uiLang === 'vi' ? 'TXT Prompt Ảnh' : 'TXT Image Prompts'}</button>
             </div>}
           </div>
         </div>
