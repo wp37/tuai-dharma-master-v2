@@ -139,11 +139,10 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
         ? `\n\n[CHARACTER MODE: MONOLOGUE (1 NGUOI NÓI XUYÊN SUỐT)]\n- Toàn bộ kịch bản CHỈ CÓ DUY NHẤT 1 nhân vật/giọng đọc nói xuyên suốt toàn bộ phân cảnh (ví dụ: Người dẫn chuyện hoặc Thiền sư).\n- Giọng đọc mang tính độc thoại, tự sự, chiêm nghiệm sâu sắc.\n- Bắt buộc ghi nhận duy nhất 1 nhân vật trong trường "character" của toàn bộ phân cảnh.`
         : `\n\n[CHARACTER MODE: DIALOGUE (2 NHÂN VẬT THAY PHIÊN)]\n- Kịch bản là cuộc đối thoại sinh động hoặc luân phiên nói giữa 2 nhân vật xuyên suốt (ví dụ: Học trò/Phật tử trẻ lo âu và Thiền sư/Sư thầy tĩnh tại).\n- Phải có sự phân chia giọng đọc rõ ràng giữa 2 nhân vật ở các phân cảnh để tạo cấu trúc đối thoại sinh động (ví dụ: Học trò hỏi ở Hook/Problem, Sư thầy giảng ở Teaching/Transformation).`;
 
-      const BATCH_SIZE = 5;
+      const BATCH_SIZE = 25;
       const totalBatches = Math.ceil(sceneCount / BATCH_SIZE);
       let allSegments = [];
       let currentStyle = '';
-      let previousContext = '';
 
       const safeString = (val) => typeof val === 'object' && val !== null ? JSON.stringify(val) : val;
 
@@ -155,8 +154,15 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
         const expectedCount = endScene - startScene + 1;
         let batchPrompt = `\n\n[BATCH MODE GENERATION (CRITICAL)]: ĐÂY LÀ PHẦN ${i+1}/${totalBatches}. BẠN BẮT BUỘC PHẢI TẠO CHÍNH XÁC ${expectedCount} CẢNH (từ cảnh số ${startScene} đến cảnh số ${endScene}) trong tổng số ${sceneCount} cảnh. VIỆC TẠO THIẾU CẢNH LÀ LỖI RẤT NGHIÊM TRỌNG! Trả về mảng JSON chứa ĐÚNG ${expectedCount} cảnh này. MỖI CẢNH PHẢI CÓ ĐẦY ĐỦ CHI TIẾT (Tuyệt đối không được viết tắt, không được để trống trường dialogues, voice_text, video_prompt, visual_desc_vi).`;
 
-        if (previousContext) {
-          batchPrompt += `\n\n[BỐI CẢNH CỦA BATCH TRƯỚC (ĐỂ VIẾT TIẾP MẠCH TRUYỆN)]:\n${previousContext}\n-> HÃY DỰA VÀO ĐÂY ĐỂ VIẾT TIẾP NỘI DUNG!`;
+        if (allSegments.length > 0) {
+          const lastScenes = allSegments.slice(-3).map(s => ({
+            scene_number: s.scene_number,
+            section: s.section,
+            visual_desc: s.visual_desc_vi || s.visual_desc,
+            voice_text: s.voice_text || (s.dialogues && s.dialogues[0] && s.dialogues[0].line) || ''
+          }));
+          
+          batchPrompt += `\n\n[CONTINUITY CONTEXT]: The story has already progressed through the first ${allSegments.length} scenes. Here are the last 3 scenes for context:\n${JSON.stringify(lastScenes, null, 2)}\n\nCRITICAL: You MUST write the next scenes continuing this exact storyline seamlessly starting at Scene ${startScene}. Do NOT repeat these scene contents, move the story forward.`;
         }
 
         const res = await callGemini(
@@ -193,11 +199,6 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
 
         allSegments = [...allSegments, ...segs];
         setSegments([...allSegments]);
-
-        if (segs.length > 0) {
-          const lastSeg = segs[segs.length - 1];
-          previousContext = `Cảnh ${lastSeg.scene_number || endScene}: ${lastSeg.section || ''} - ${lastSeg.visual_desc_vi || lastSeg.visual_desc || ''}. Lời thoại/Đọc cuối: "${lastSeg.voice_text || (lastSeg.dialogues && lastSeg.dialogues[0] && lastSeg.dialogues[0].line) || '...'}"`;
-        }
       }
       
       onScriptGenerated(allSegments, currentStyle, topic);
