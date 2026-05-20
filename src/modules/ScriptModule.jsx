@@ -79,6 +79,7 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
   const [durationStr, setDurationStr] = useState('1');
   const [style, setStyle] = useState('auto');
   const [dharmaTopic, setDharmaTopic] = useState('karma');
+  const [charMode, setCharMode] = useState('dialogue');
   const [loading, setLoading] = useState(false);
   const [segments, setSegments] = useState([]);
   const [scriptMeta, setScriptMeta] = useState(null);
@@ -132,8 +133,12 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
       styleName += ` - DHARMA TOPIC: ${topicObj?.label}. MICRO-CONTEXT (CRITICAL): ${microCtx}.`;
 
       const seed = Math.floor(Math.random() * 1000000);
+      const characterPrompt = charMode === 'monologue'
+        ? `\n\n[CHARACTER MODE: MONOLOGUE (1 NGUOI NÓI XUYÊN SUỐT)]\n- Toàn bộ kịch bản CHỈ CÓ DUY NHẤT 1 nhân vật/giọng đọc nói xuyên suốt toàn bộ phân cảnh (ví dụ: Người dẫn chuyện hoặc Thiền sư).\n- Giọng đọc mang tính độc thoại, tự sự, chiêm nghiệm sâu sắc.\n- Bắt buộc ghi nhận duy nhất 1 nhân vật trong trường "character" của toàn bộ phân cảnh.`
+        : `\n\n[CHARACTER MODE: DIALOGUE (2 NHÂN VẬT THAY PHIÊN)]\n- Kịch bản là cuộc đối thoại sinh động hoặc luân phiên nói giữa 2 nhân vật xuyên suốt (ví dụ: Học trò/Phật tử trẻ lo âu và Thiền sư/Sư thầy tĩnh tại).\n- Phải có sự phân chia giọng đọc rõ ràng giữa 2 nhân vật ở các phân cảnh để tạo cấu trúc đối thoại sinh động (ví dụ: Học trò hỏi ở Hook/Problem, Sư thầy giảng ở Teaching/Transformation).`;
+
       const res = await callGemini(
-        `TOPIC: "${topic}"\nDURATION: ${duration}m\nSCENE_COUNT: ${sceneCount}\nTARGET_MARKET: ${mkt.name}\nNATIVE_LANGUAGE: ${mkt.voice_lang}\nCULTURAL_CONTEXT: ${mkt.culture}\nVISUAL_STYLE: ${styleName}\n[ANTI-REPETITION SEED]: ${seed}\n\nCRITICAL INSTRUCTION:\n1. Write VOICE_TEXT and DIALOGUES in "${mkt.voice_lang}"\n2. DO NOT just translate from Vietnamese.\n3. GENERATE JSON OBJECT.`,
+        `TOPIC: "${topic}"\nDURATION: ${duration}m\nSCENE_COUNT: ${sceneCount}\nTARGET_MARKET: ${mkt.name}\nNATIVE_LANGUAGE: ${mkt.voice_lang}\nCULTURAL_CONTEXT: ${mkt.culture}\nVISUAL_STYLE: ${styleName}\n[ANTI-REPETITION SEED]: ${seed}${characterPrompt}\n\nCRITICAL INSTRUCTION:\n1. Write VOICE_TEXT and DIALOGUES in "${mkt.voice_lang}"\n2. DO NOT just translate from Vietnamese.\n3. GENERATE JSON OBJECT.`,
         SCRIPT_SYSTEM_PROMPT
       );
 
@@ -252,15 +257,33 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
             </div>
           </div>
 
-          {/* Dharma topic */}
-          <div className="bg-[#10141c] border border-slate-700/30 rounded-xl p-4">
-            <label className="text-xs font-bold text-teal-400 uppercase mb-2 block flex items-center gap-2">
-              <i className="fa-solid fa-leaf text-teal-400" /> {uiLang === 'vi' ? 'CHỌN PHÂN NGÁCH PHẬT PHÁP' : 'DHARMA SUB-TOPIC'}
-            </label>
-            <select value={dharmaTopic} onChange={e => setDharmaTopic(e.target.value)}
-              className="w-full bg-[#0a0e14] border border-teal-500/50 rounded-lg p-3 text-sm text-white outline-none cursor-pointer">
-              {DHARMA_TOPICS.map(dt => <option key={dt.id} value={dt.id}>{dt.label}</option>)}
-            </select>
+          {/* Dharma topic & Character Mode */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-[#10141c] border border-slate-700/30 rounded-xl p-4 flex flex-col justify-center">
+              <label className="text-xs font-bold text-teal-400 uppercase mb-2 block flex items-center gap-2">
+                <i className="fa-solid fa-leaf text-teal-400" /> {uiLang === 'vi' ? 'CHỌN PHÂN NGÁCH PHẬT PHÁP' : 'DHARMA SUB-TOPIC'}
+              </label>
+              <select value={dharmaTopic} onChange={e => setDharmaTopic(e.target.value)}
+                className="w-full bg-[#0a0e14] border border-teal-500/50 rounded-lg p-3 text-sm text-white outline-none cursor-pointer">
+                {DHARMA_TOPICS.map(dt => <option key={dt.id} value={dt.id}>{dt.label}</option>)}
+              </select>
+            </div>
+
+            <div className="bg-[#10141c] border border-slate-700/30 rounded-xl p-4 flex flex-col justify-center">
+              <label className="text-xs font-bold text-slate-400 uppercase mb-2 block flex items-center gap-2">
+                <i className="fa-solid fa-users text-amber-400" /> {uiLang === 'vi' ? 'SỐ LƯỢNG NHÂN VẬT' : 'NUMBER OF CHARACTERS'}
+              </label>
+              <div className="flex bg-[#0a0e14] p-1 rounded-lg border border-slate-700/50">
+                <button type="button" onClick={() => setCharMode('monologue')}
+                  className={`flex-1 py-2 px-3 rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-all ${charMode === 'monologue' ? 'bg-amber-950/40 text-amber-300 border border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]' : 'border border-transparent text-slate-400 hover:text-slate-200'}`}>
+                  <i className="fa-solid fa-user" /> {uiLang === 'vi' ? '1 Nhân Vật (Xuyên Suốt)' : '1 Character (Monologue)'}
+                </button>
+                <button type="button" onClick={() => setCharMode('dialogue')}
+                  className={`flex-1 py-2 px-3 rounded-md text-xs font-bold flex items-center justify-center gap-2 transition-all ${charMode === 'dialogue' ? 'bg-amber-950/40 text-amber-300 border border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]' : 'border border-transparent text-slate-400 hover:text-slate-200'}`}>
+                  <i className="fa-solid fa-users" /> {uiLang === 'vi' ? '2 Nhân Vật (Thay Phiên)' : '2 Characters (Dialogue)'}
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Visual styles */}
