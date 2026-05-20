@@ -151,7 +151,8 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
         const startScene = i * BATCH_SIZE + 1;
         const endScene = Math.min((i + 1) * BATCH_SIZE, sceneCount);
         
-        const batchPrompt = `\n\n[BATCH MODE GENERATION (CRITICAL)]: ĐÂY LÀ PHẦN ${i+1}/${totalBatches}. BẠN CHỈ ĐƯỢC TẠO CÁC CẢNH TỪ CẢNH SỐ ${startScene} ĐẾN CẢNH SỐ ${endScene} trong tổng số ${sceneCount} cảnh. Trả về mảng JSON chứa các cảnh này (vẫn giữ đúng cấu trúc Narrative Arc).`;
+        const expectedCount = endScene - startScene + 1;
+        const batchPrompt = `\n\n[BATCH MODE GENERATION (CRITICAL)]: ĐÂY LÀ PHẦN ${i+1}/${totalBatches}. BẠN BẮT BUỘC PHẢI TẠO CHÍNH XÁC ${expectedCount} CẢNH (từ cảnh số ${startScene} đến cảnh số ${endScene}) trong tổng số ${sceneCount} cảnh. VIỆC TẠO THIẾU CẢNH LÀ LỖI RẤT NGHIÊM TRỌNG! Trả về mảng JSON chứa ĐÚNG ${expectedCount} cảnh này.`;
 
         const res = await callGemini(
           `TOPIC: "${topic}"\nDURATION: ${duration}m\nSCENE_COUNT: ${sceneCount}\nTARGET_MARKET: ${mkt.name}\nNATIVE_LANGUAGE: ${mkt.voice_lang}\nCULTURAL_CONTEXT: ${mkt.culture}\nVISUAL_STYLE: ${styleName}\n[ANTI-REPETITION SEED]: ${seed}${characterPrompt}${batchPrompt}\n\nCRITICAL INSTRUCTION:\n1. Write VOICE_TEXT and DIALOGUES in "${mkt.voice_lang}"\n2. DO NOT just translate from Vietnamese.\n3. GENERATE JSON OBJECT.`,
