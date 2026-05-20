@@ -311,7 +311,7 @@ SEO_CHECKLIST = { category: [{ id, label }] }
 ```javascript
 callGemini(prompt, systemInstruction)
   → POST generativelanguage.googleapis.com
-  → Model: gemini-2.0-flash
+  → Model: gemini-2.5-flash
   → Auto-parse JSON from response
   → Round-robin key selection
 
@@ -429,7 +429,7 @@ git push origin master
 | Styling | Tailwind CSS | CDN |
 | Icons | FontAwesome | 6.x CDN |
 | Font | Inter | Google Fonts |
-| AI Text | Gemini 2.0 Flash | API |
+| AI Text | Gemini 2.5 Flash | API |
 | AI Image | Imagen 3.0 | API |
 | State | React useState | Built-in |
 | Storage | localStorage | Built-in |

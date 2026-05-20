@@ -83,7 +83,7 @@ async function withKeyRetry(apiCall) {
 // ─── Gemini AI Text Generation ───
 export async function callGemini(userPrompt, systemPrompt) {
   return withKeyRetry(async (key) => {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
     const body = {
       contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
       systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -91,7 +91,7 @@ export async function callGemini(userPrompt, systemPrompt) {
         temperature: 0.85,
         topP: 0.95,
         topK: 40,
-        maxOutputTokens: 65536,
+        maxOutputTokens: 8192,
         responseMimeType: 'application/json',
       },
     };
