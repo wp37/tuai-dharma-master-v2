@@ -106,6 +106,9 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
   const [dharmaTopic, setDharmaTopic] = useState('dharma_wisdom');
   const [audienceProfile, setAudienceProfile] = useState('millennial');
   const [charMode, setCharMode] = useState('dialogue');
+  const [contentContext, setContentContext] = useState('');
+  const [genMode, setGenMode] = useState('creative');
+  const [competitorScript, setCompetitorScript] = useState('');
   const [loading, setLoading] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
   const [segments, setSegments] = useState([]);
@@ -149,6 +152,9 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
 
   const generate = async () => {
     if (!topic) return showToast(uiLang === 'vi' ? 'Vui lòng nhập chủ đề!' : 'Please enter a topic!');
+    if (genMode === 'competitor' && !competitorScript.trim()) {
+      return showToast(uiLang === 'vi' ? 'Vui lòng nhập kịch bản đối thủ!' : 'Please enter competitor script!');
+    }
     setSegments([]); setScriptMeta(null); setStyleSuggestion(null); setRefineCount(0); setLoading(true);
     setBatchProgress({ current: 0, total: 0 });
     try {
@@ -167,6 +173,12 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
       const characterPrompt = charMode === 'monologue'
         ? `\n\n[CHARACTER MODE: MONOLOGUE (1 NGUOI NÓI XUYÊN SUỐT)]\n- Toàn bộ kịch bản CHỈ CÓ DUY NHẤT 1 nhân vật/giọng đọc nói xuyên suốt toàn bộ phân cảnh (ví dụ: Người dẫn chuyện hoặc Sư thầy).\n- Giọng đọc mang tính độc thoại, tự sự, chiêm nghiệm sâu sắc.\n- Bắt buộc ghi nhận duy nhất 1 nhân vật trong trường "character" của toàn bộ phân cảnh.`
         : `\n\n[CHARACTER MODE: DIALOGUE (2 NHÂN VẬT THAY PHIÊN)]\n- Kịch bản là cuộc đối thoại sinh động hoặc luân phiên nói giữa 2 nhân vật xuyên suốt (ví dụ: Người trẻ đang trăn trở, ưu tư hoài niệm và Sư thầy chỉ dạy Tánh Biết hoặc triết lý nhân sinh).\n- Phải có sự phân chia giọng đọc rõ ràng giữa 2 nhân vật ở các phân cảnh để tạo cấu trúc đối thoại sinh động (ví dụ: Người trẻ trăn trở ở Hook/Problem, Sư thầy khuyên bảo ở Teaching/Transformation).`;
+
+      const modeInstruction = genMode === 'creative' 
+        ? `\n\n[GENERATION_MODE: SÁNG TẠO (CREATIVE)]: Hãy tự do sáng tạo kịch bản nguyên bản, mới lạ, sâu sắc và đầy cảm xúc dựa trên chủ đề.` 
+        : `\n\n[GENERATION_MODE: BÁM SÁT KỊCH BẢN ĐỐI THỦ (FOLLOW COMPETITOR)]: Hãy phân tích chặt chẽ cấu trúc phân đoạn, thời lượng, mạch logic, cách đặt câu hỏi hook đầu video, các mốc chuyển cảnh và cách phân bổ thời lượng của kịch bản gốc của đối thủ dưới đây:\n\n--- KỊCH BẢN ĐỐI THỦ ---\n${competitorScript}\n---------------------\n\nHãy mô phỏng chính xác cấu trúc và nhịp điệu trên, nhưng viết lại nội dung mới mẻ, mang chiều sâu triết lý cao nhất dựa trên chủ đề mới.`;
+
+      const contextBlock = contentContext.trim() ? `\n\n[CONTENT_CONTEXT (Nội dung/bối cảnh do user cung cấp)]:\nHãy dựa vào đây làm nguồn tư liệu chính để viết kịch bản, giữ đúng tinh thần và ý nghĩa của nội dung gốc:\n---\n${contentContext.trim()}\n---` : '';
 
       const BATCH_SIZE = 25;
       const totalBatches = Math.ceil(sceneCount / BATCH_SIZE);
@@ -195,7 +207,7 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
         }
 
         const res = await callGemini(
-          `TOPIC: "${topic}"\nDURATION: ${duration}m\nSCENE_COUNT: ${sceneCount}\nTARGET_MARKET: ${mkt.name}\nNATIVE_LANGUAGE: ${mkt.voice_lang}\nCULTURAL_CONTEXT: ${mkt.culture}\nVISUAL_STYLE: ${styleName}${pacingPrompt}\n[ANTI-REPETITION SEED]: ${seed}${characterPrompt}${batchPrompt}\n\nCRITICAL INSTRUCTION:\n1. Write VOICE_TEXT and DIALOGUES in "${mkt.voice_lang}"\n2. BẮT BUỘC số lượng từ của mỗi phân cảnh KHÔNG VƯỢT QUÁ ${activeProfile.maxWords} từ để khớp nhịp đọc WPM.\n3. DO NOT just translate from Vietnamese.\n4. GENERATE JSON OBJECT.`,
+          `TOPIC: "${topic}"\nDURATION: ${duration}m\nSCENE_COUNT: ${sceneCount}\nTARGET_MARKET: ${mkt.name}\nNATIVE_LANGUAGE: ${mkt.voice_lang}\nCULTURAL_CONTEXT: ${mkt.culture}\nVISUAL_STYLE: ${styleName}${pacingPrompt}\n[ANTI-REPETITION SEED]: ${seed}${characterPrompt}${modeInstruction}${contextBlock}${batchPrompt}\n\nCRITICAL INSTRUCTION:\n1. Write VOICE_TEXT and DIALOGUES in "${mkt.voice_lang}"\n2. BẮT BUỘC số lượng từ của mỗi phân cảnh KHÔNG VƯỢT QUÁ ${activeProfile.maxWords} từ để khớp nhịp đọc WPM.\n3. DO NOT just translate from Vietnamese.\n4. GENERATE JSON OBJECT.`,
           SCRIPT_SYSTEM_PROMPT
         );
 
@@ -306,6 +318,61 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
                   : <><i className="fa-solid fa-wand-magic-sparkles" /> {uiLang === 'vi' ? 'AI Đề Xuất Style' : 'AI Suggest Style'}</>}
               </button>
             </div>
+          </div>
+
+          {/* === NỘI DUNG / BỐI CẢNH === */}
+          <div className="mb-6">
+            <textarea
+              value={contentContext}
+              onChange={e => setContentContext(e.target.value)}
+              className="w-full bg-[#0a0e14] border border-slate-700/50 rounded-lg p-3 text-sm text-white outline-none focus:border-amber-500/50 placeholder-slate-600 transition-colors min-h-[100px] resize-y leading-relaxed"
+              placeholder={uiLang === 'vi' ? "Dán nội dung bài viết, trích đoạn kinh điển, câu chuyện, hoặc bối cảnh bạn muốn AI dựa vào để viết kịch bản..." : "Paste article content, quotes, stories you want the AI to base the script on..."}
+            />
+            <div className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
+              <i className="fa-solid fa-info-circle" /> {uiLang === 'vi' ? 'Nhập nội dung gốc để AI viết kịch bản sát ý hơn. Để trống nếu muốn AI tự sáng tạo.' : 'Enter original content for a more accurate script. Leave empty for AI creativity.'}
+            </div>
+          </div>
+
+          {/* === GENERATION MODE === */}
+          <div className="bg-[#10141c] border border-slate-700/30 rounded-xl p-4 mb-6">
+            <label className="text-xs font-bold text-amber-400 uppercase mb-3 block flex items-center gap-2">
+              <i className="fa-solid fa-wand-magic-sparkles" /> {uiLang === 'vi' ? 'ĐỊNH HƯỚNG NỘI DUNG SÁNG TẠO' : 'CREATIVE DIRECTION'}
+            </label>
+            <div className="grid grid-cols-2 gap-3 mb-1">
+              <button 
+                type="button"
+                onClick={() => setGenMode('creative')}
+                className={`p-3 rounded-lg border text-center transition-all font-bold text-[11px] flex items-center justify-center gap-2 ${
+                  genMode === 'creative' 
+                    ? 'bg-amber-950/40 border-amber-500/50 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.2)]' 
+                    : 'bg-[#0a0e14] border-slate-700/50 text-slate-400 hover:bg-[#10141c] hover:text-white'
+                }`}
+              >
+                <i className="fa-solid fa-compass text-[13px]" /> {uiLang === 'vi' ? 'Sáng Tạo Mới' : 'Creative'}
+              </button>
+              <button 
+                type="button"
+                onClick={() => setGenMode('competitor')}
+                className={`p-3 rounded-lg border text-center transition-all font-bold text-[11px] flex items-center justify-center gap-2 ${
+                  genMode === 'competitor' 
+                    ? 'bg-violet-950/30 border-violet-500/50 text-violet-300 shadow-[0_0_10px_rgba(139,92,246,0.2)]' 
+                    : 'bg-[#0a0e14] border-slate-700/50 text-slate-400 hover:bg-[#10141c] hover:text-white'
+                }`}
+              >
+                <i className="fa-solid fa-copy text-[13px]" /> {uiLang === 'vi' ? 'Bám Sát Đối Thủ' : 'Follow Competitor'}
+              </button>
+            </div>
+            {genMode === 'competitor' && (
+              <div className="space-y-1.5 animate-[fadeIn_0.3s_ease-out] mt-3">
+                <label className="text-[10px] font-bold text-violet-400 uppercase block">{uiLang === 'vi' ? 'Dán Kịch Bản Gốc / Transcript Đối Thủ' : 'Paste Competitor Script/Transcript'}</label>
+                <textarea 
+                  value={competitorScript} 
+                  onChange={e => setCompetitorScript(e.target.value)} 
+                  className="w-full bg-[#0a0e14] border border-violet-500/30 rounded-lg p-3 text-xs text-white outline-none focus:border-violet-500/50 placeholder-slate-600 min-h-[100px] resize-none"
+                  placeholder={uiLang === 'vi' ? "Dán kịch bản video viral của đối thủ vào đây. AI sẽ bóc tách cấu trúc để tạo ra kịch bản mới cho bạn..." : "Paste viral competitor script. AI will analyze its structure to generate yours..."}
+                />
+              </div>
+            )}
           </div>
 
           {/* Duration & Market */}
