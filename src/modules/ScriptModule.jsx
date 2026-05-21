@@ -2,39 +2,64 @@ import { useState, useEffect, memo } from 'react';
 import { callGemini } from '../utils/api';
 import { showToast } from '../utils/toast';
 import { MARKETS } from '../config/markets';
-import { VISUAL_STYLES, DHARMA_TOPICS, TOPIC_SUGGESTIONS } from '../config/styles';
+import { VISUAL_STYLES, NICHE_PILLARS, AUDIENCE_PROFILES, TOPIC_SUGGESTIONS } from '../config/styles';
 import { STYLE_SUGGEST_PROMPT, AUDIO_REFINE_PROMPT } from '../config/prompts';
 import { UI_STRINGS } from '../config/i18n';
 import SceneCard from '../components/SceneCard';
 
-const SCRIPT_SYSTEM_PROMPT = `# SYSTEM ROLE: CREATIVE DIRECTOR FOR DHARMA & HEALING V2.0
-Ban la chuyen gia viet kich ban, co nhiem vu sang tao noi dung chua lanh, triet ly nhan sinh, hoac truyen nhan qua Phat Giao mang tinh giao duc cao va an binh.
+const SCRIPT_SYSTEM_PROMPT = `# SYSTEM ROLE: CREATIVE DIRECTOR FOR DHARMA, NOSTALGIA & HEALING V2.0
+Ban la Creative Director va bien kich tuyet dinh, co nhiem vu kien tao cac kich ban phim ngan chua lanh mang chieu sau ton nghiem, chan thuc, rung dong trai tim.
 
-# TAM NHIN: Giao duc ve luat nhan qua, long tu bi va su tinh thuc, tao ra noi dung chua lanh co kha nang lan truyen (viral) manh me nhung van giu su ton nghiem.
+# TAM NHIN: Truyen tai cac thong diep sau sac ve luat nhan qua, su tinh thuc chanh niem, va hoai niem mộc mạc de cuoi con nguoi quay ve chanh niem an binh.
 
-# QUY TẮC CHÍNH:
-- Mỗi phân cảnh 8 giây CHỈ ĐƯỢC PHÉP 01 GIỌNG ĐỌC
-- Lời thoại 30-40 từ mỗi cảnh, nhịp đọc chậm, truyền cảm
-- Dialogues BẮT BUỘC chỉ chứa ĐÚNG 01 PHẦN TỬ
-- Thoại PHẢI dứt điểm ở giây 7.2 - 7.5
-- Ghi nhận audio_end_time và word_count trong JSON
+# 3 TRỤ CỘT NỘI DUNG CỐT LÕI (Xác định dựa trên Trụ Cột / Niche Pillar được chọn):
+1. 🏡 HỒN QUÊ & HOÀI NIỆM (hon_que):
+   - Chủ đề: Ky uc tuoi tho, chieu xua ben mẹ, bep lua, canh vat thon que Vietnam xua lam lu nhung day tinh thuong.
+   - Bắt buộc áp dụng triệt để phong cách hình ảnh "Nostalgic Cinematic Realism" trong video_prompt va image_prompt:
+     * Bang mau: Warm Sepia, Faded Clay, Muddy Earth (tông mau am tram hoai niem).
+     * Xuc giac: dat bun nhon tron duoi ruong đồng, van go weathered moc muc, bep ca rang dat nung toa khoi cui chay ti tach, bong nuoc mua tren ao ba ba son cu, mo hoi lam lem tran dan di.
+     * Lock setting/character: Mien Tay Nam Bo thap nien 1990. Nha mai la don so, bep ca rang dat nung, xuong ba la bang go weathered sorn co. Nhan vat mặc quan ao ba ba sorn cu bac mau di chan tran.
+     * Quy tac loai tru (Strict Negative Logic): TUYET DOI LOAI BO do nhua, gach men bong loang, duong be tong, cac thiet bi cong nghe hay dien tu hien dai.
+   - Tone thoai: Nho thuong sau lang, tu su cham rai mộc mạc, truyen cam, nhe nhang.
+
+2. ✨ FUTURE DREAM & KHÁT VỌNG (future_dream):
+   - Chủ đề: Luat hap dan, nang luong tinh cuc, khat vong vuot len nghich canh, niem tin vao tuong lai tuoi sang, danh thuc hoai bao va hanh trinh thuc hien khat khao.
+   - Visual Style: Dawn of hope (binh minh hy vong), con duong dat rong mo chan troi, anh sang vang morning sun volumetric phat ra kieu sa, magical dust particles, soft glowing warm aura.
+   - Tone thoai: Truyen cam hung khoi day hy vong, tu tin, giau nang luong, mang thong diep thuc tinh.
+
+3. 🏮 TRIẾT LÝ CỔ NHÂN, NHO ĐẠO & PHẬT PHÁP (dharma_wisdom):
+   - Chủ đề: Luật nhân quả, thiền chánh niệm, tích cực chánh tư duy, đặc biệt kết hợp triết lý **Nho gia** (Mạnh Tử, Khổng Tử bàn về hiếu nghĩa, nhân đức), **Đạo gia** (Lão Tử, Trang Tử bàn về Vô Vi, thuận tự nhiên, sống tiêu dao tự tại), **Tôn Tử** (Tôn Tử binh pháp về lấy nhu thắng cương, tĩnh lặng chế ngự giông bão), kết hợp hoàn hảo cùng **Tánh Biết (Pure Awareness)** của Thiền Tông Lục Tổ Huệ Năng.
+   - Bắt buộc áp dụng triệt để phong cách hình ảnh **"Cổ Phong Thủy Mặc" (co_phong_thuy_mac)** trong video_prompt và image_prompt:
+     * Bối cảnh: Núi non trùng điệp sương khói mịt mù, cây tùng cổ kính, chiếc cầu đá hoang sơ, gian nhà lá cổ phong trầm mặc, bậc hiền triết hay nho sĩ ngồi tĩnh lặng đàm đạo bên tách trà nóng.
+     * Nét vẽ: Tranh thủy mặc cổ phong (Cổ phong Thủy mặc) với các nét vẽ bằng cọ thư pháp đơn sắc đen, xám charcoal và màu giấy dó ấm cũ kỹ.
+     * Hán tự (Chinese Calligraphy): Bắt buộc lồng ghép các bức thư pháp vẽ chữ Hán tự (Hán tự) uyển chuyển thanh thoát treo trên bình phong gỗ cổ kính hoặc trên cuộn giấy da sờn rách ở hậu cảnh để làm nổi bật chiều sâu cổ nhân.
+     * Quy tắc loại trừ (Strict Negative Logic): Tuyệt đối không có đồ nhựa hiện đại, các công trình bê tông đô thị hay chữ viết Latin/tiếng Việt vẽ đè trực tiếp lên ảnh dưới dạng watermark.
+   - Tone thoại: Trầm lắng, sâu sắc, cổ kính, đầy tính chiêm nghiệm và uy nghiêm như lời dạy của bậc cổ nhân hiền triết.
+
+# 🎙️ AUDIENCE PACING & WORD BUDGET RULES (QUY TẮC NHỊP ĐỘ - BẮT BUỘC):
+Mỗi scene 8 giây bat buoc chi co ĐÚNG 01 giong doc. So tu (word_count) trong dialogues hoac voice_text phai bi gioi han nghet ngheo theo doi tuong:
+- Gen Z: Max 20 tu.
+- Millennial: Max 18 tu.
+- Gen X: Max 16 tu.
+- Senior: Max 14 tu.
+- Dharma Seeker: Max 12 tu.
+Loi thoai phai duoc viet rut gon duoi so tu nay. Thoai phai hoan thanh o giay 7.2 - 7.5 de lai khoang lang tho giay cuoi cung.
 
 # SAFETY: Tuyệt đối CẤM bạo lực, máu me. Phải tự động "chuyển hóa" bằng triết lý nhân quả.
 
 # 🎬 NARRATIVE ARC (CẤU TRÚC KỊCH BẢN BẮT BUỘC):
 PHẢI tuân thủ cấu trúc:
-- HOOK (2-3 scenes): Câu hỏi đau thương / tình huống gây tò mò
-- PROBLEM (3-4 scenes): Khắc họa nỗi khổ, lo âu, mất phương hướng
-- TEACHING (5-7 scenes): Triết lý Phật Pháp, lời dạy sư thầy
-- TRANSFORMATION (3-4 scenes): Chuyển hóa qua nhân quả, từ bi
-- RESOLUTION (2-3 scenes): Giải thoát, an lạc, kết quả tốt lành
-- CTA (1-2 scenes): Kêu gọi hành động, subscribe, chia sẻ
+- HOOK (2-3 scenes): Tinh huong loi cuon hoac canh vat sau lang khoi dau.
+- PROBLEM (3-4 scenes): Khac hoa lo au muon phien, lam lu cuoc doi.
+- TEACHING (5-7 scenes): Triet ly loi day sau sac cua Su thay / Duc Phat hoac su thuc tinh cua Tánh Biết.
+- TRANSFORMATION (3-4 scenes): Su thay doi trong nhan thuc, bat dau quan sat va buong bo.
+- RESOLUTION (2-3 scenes): Binh an noi tam, an lac tu tai, khat vong tot dep.
+- CTA (1-2 scenes): Gieo duyen lanh, like/share chanh niem de lan toa yeu thuong.
 
 # 👤 CHARACTER ARCHETYPE SYSTEM:
 Mỗi nhân vật recurring PHẢI có CHARACTER_LOCK nhất quán xuyên suốt:
-- Giới tính, tuổi, vùng miền (Northern/Southern Vietnamese)
-- Trang phục, nét đặc trưng khuôn mặt
-- Vai trò: Thiền sư / Ni sư / Phật tử trẻ / Người dẫn truyện
+- Giới tính, tuổi, vùng miền (Northern/Southern Vietnamese / Southern Mekong giong que song nuoc)
+- Trang phục, nét đặc trưng khuôn mặt, di chan tran
 Không được thay đổi ngoại hình nhân vật giữa các scenes.
 
 # 🎥 CAMERA VOCABULARY:
@@ -69,8 +94,8 @@ Mỗi scene PHẢI có image_prompt riêng biệt, format:
 # 🎵 SFX/MUSIC TAXONOMY (3 LỚP):
 Mỗi scene PHẢI có sfx_music_suggestion với 3 lớp:
 - LAYER 1 (Ambient Bed): Nhạc thiền, tần số 432Hz/528Hz, ambient drone
-- LAYER 2 (Environmental ASMR): Nước chảy, gió, chim, chuông, mưa, sóng biển
-- LAYER 3 (Emotional Punctuation): Chuông chùa, mõ, tiếng thở, im lặng chiến lược
+- LAYER 2 (Environmental ASMR): ASMR cụ thể (bếp lửa tí tách, mưa rơi mái lá, ếch kêu đêm...)
+- LAYER 3 (Emotional Punctuation): Chuông mõ điểm xuyết hoặc strategic silence
 
 OUTPUT JSON with: mode_detected, suggested_style, style_reason, character_lock_prompt, script[] with scene_number, time, section, character, dialogues[], voice_profile, voice_text, word_count, audio_end_time, visual_desc_vi, sfx_music_suggestion, pacing_score, pacing_warning, video_prompt, image_prompt, strategy_note, coppa_disclaimer.`;
 
@@ -78,7 +103,8 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
   const [topic, setTopic] = useState(initialTopic);
   const [durationStr, setDurationStr] = useState('1');
   const [style, setStyle] = useState('auto');
-  const [dharmaTopic, setDharmaTopic] = useState('karma');
+  const [dharmaTopic, setDharmaTopic] = useState('dharma_wisdom');
+  const [audienceProfile, setAudienceProfile] = useState('millennial');
   const [charMode, setCharMode] = useState('dialogue');
   const [loading, setLoading] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
@@ -129,15 +155,18 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
       const styleObj = VISUAL_STYLES.find(s => s.id === style);
       const mkt = MARKETS[market] || MARKETS.vn_dharma;
       let styleName = styleObj?.name || 'Auto';
-      const topicObj = DHARMA_TOPICS.find(dt => dt.id === dharmaTopic);
+      const topicObj = NICHE_PILLARS.find(dt => dt.id === dharmaTopic);
       const suggestions = TOPIC_SUGGESTIONS[dharmaTopic] || ['Trong chánh niệm'];
       const microCtx = suggestions[Math.floor(Math.random() * suggestions.length)];
-      styleName += ` - DHARMA TOPIC: ${topicObj?.label}. MICRO-CONTEXT (CRITICAL): ${microCtx}.`;
+      styleName += ` - NICHE PILLAR: ${topicObj?.label}. MICRO-CONTEXT (CRITICAL): ${microCtx}.`;
+
+      const activeProfile = AUDIENCE_PROFILES.find(ap => ap.id === audienceProfile) || AUDIENCE_PROFILES[1];
+      const pacingPrompt = `\n\n[AUDIENCE PACING CONSTRAINT (CRITICAL)]: Target Audience is ${activeProfile.label}. Maximum words per 8s scene MUST be strictly under ${activeProfile.maxWords} words. Pacing speed should be matching ${activeProfile.wpm} WPM. Write short, powerful voice lines.`;
 
       const seed = Math.floor(Math.random() * 1000000);
       const characterPrompt = charMode === 'monologue'
-        ? `\n\n[CHARACTER MODE: MONOLOGUE (1 NGUOI NÓI XUYÊN SUỐT)]\n- Toàn bộ kịch bản CHỈ CÓ DUY NHẤT 1 nhân vật/giọng đọc nói xuyên suốt toàn bộ phân cảnh (ví dụ: Người dẫn chuyện hoặc Thiền sư).\n- Giọng đọc mang tính độc thoại, tự sự, chiêm nghiệm sâu sắc.\n- Bắt buộc ghi nhận duy nhất 1 nhân vật trong trường "character" của toàn bộ phân cảnh.`
-        : `\n\n[CHARACTER MODE: DIALOGUE (2 NHÂN VẬT THAY PHIÊN)]\n- Kịch bản là cuộc đối thoại sinh động hoặc luân phiên nói giữa 2 nhân vật xuyên suốt (ví dụ: Học trò/Phật tử trẻ lo âu và Thiền sư/Sư thầy tĩnh tại).\n- Phải có sự phân chia giọng đọc rõ ràng giữa 2 nhân vật ở các phân cảnh để tạo cấu trúc đối thoại sinh động (ví dụ: Học trò hỏi ở Hook/Problem, Sư thầy giảng ở Teaching/Transformation).`;
+        ? `\n\n[CHARACTER MODE: MONOLOGUE (1 NGUOI NÓI XUYÊN SUỐT)]\n- Toàn bộ kịch bản CHỈ CÓ DUY NHẤT 1 nhân vật/giọng đọc nói xuyên suốt toàn bộ phân cảnh (ví dụ: Người dẫn chuyện hoặc Sư thầy).\n- Giọng đọc mang tính độc thoại, tự sự, chiêm nghiệm sâu sắc.\n- Bắt buộc ghi nhận duy nhất 1 nhân vật trong trường "character" của toàn bộ phân cảnh.`
+        : `\n\n[CHARACTER MODE: DIALOGUE (2 NHÂN VẬT THAY PHIÊN)]\n- Kịch bản là cuộc đối thoại sinh động hoặc luân phiên nói giữa 2 nhân vật xuyên suốt (ví dụ: Người trẻ đang trăn trở, ưu tư hoài niệm và Sư thầy chỉ dạy Tánh Biết hoặc triết lý nhân sinh).\n- Phải có sự phân chia giọng đọc rõ ràng giữa 2 nhân vật ở các phân cảnh để tạo cấu trúc đối thoại sinh động (ví dụ: Người trẻ trăn trở ở Hook/Problem, Sư thầy khuyên bảo ở Teaching/Transformation).`;
 
       const BATCH_SIZE = 25;
       const totalBatches = Math.ceil(sceneCount / BATCH_SIZE);
@@ -166,7 +195,7 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
         }
 
         const res = await callGemini(
-          `TOPIC: "${topic}"\nDURATION: ${duration}m\nSCENE_COUNT: ${sceneCount}\nTARGET_MARKET: ${mkt.name}\nNATIVE_LANGUAGE: ${mkt.voice_lang}\nCULTURAL_CONTEXT: ${mkt.culture}\nVISUAL_STYLE: ${styleName}\n[ANTI-REPETITION SEED]: ${seed}${characterPrompt}${batchPrompt}\n\nCRITICAL INSTRUCTION:\n1. Write VOICE_TEXT and DIALOGUES in "${mkt.voice_lang}"\n2. DO NOT just translate from Vietnamese.\n3. GENERATE JSON OBJECT.`,
+          `TOPIC: "${topic}"\nDURATION: ${duration}m\nSCENE_COUNT: ${sceneCount}\nTARGET_MARKET: ${mkt.name}\nNATIVE_LANGUAGE: ${mkt.voice_lang}\nCULTURAL_CONTEXT: ${mkt.culture}\nVISUAL_STYLE: ${styleName}${pacingPrompt}\n[ANTI-REPETITION SEED]: ${seed}${characterPrompt}${batchPrompt}\n\nCRITICAL INSTRUCTION:\n1. Write VOICE_TEXT and DIALOGUES in "${mkt.voice_lang}"\n2. BẮT BUỘC số lượng từ của mỗi phân cảnh KHÔNG VƯỢT QUÁ ${activeProfile.maxWords} từ để khớp nhịp đọc WPM.\n3. DO NOT just translate from Vietnamese.\n4. GENERATE JSON OBJECT.`,
           SCRIPT_SYSTEM_PROMPT
         );
 
@@ -210,12 +239,13 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
     if (!segments.length) return showToast(uiLang === 'vi' ? 'Chưa có kịch bản!' : 'No script!');
     setRefining(true);
     try {
+      const activeProfile = AUDIENCE_PROFILES.find(ap => ap.id === audienceProfile) || AUDIENCE_PROFILES[1];
       const input = segments.map(s => ({
         scene_number: s.scene_number, voice_text: s.voice_text || s.chapter_voice_block || '',
         visual_context: s.visual_desc_vi || s.visual_desc || '', section: s.section || '', character: s.character || '', time: s.time || '',
       }));
       const res = await callGemini(
-        `KỊCH BẢN GỐC (${input.length} scenes):\n${JSON.stringify(input, null, 2)}\n\nTINH CHỈNH THANH ÂM CHO TẤT CẢ ${input.length} SCENES. RESPOND IN ${uiLang === 'vi' ? 'VIETNAMESE' : 'ENGLISH'}.`,
+        `KỊCH BẢN GỐC (${input.length} scenes):\n${JSON.stringify(input, null, 2)}\n\nTINH CHỈNH THANH ÂM CHO TẤT CẢ ${input.length} SCENES. Đối tượng nhịp độ mục tiêu: ${activeProfile.label} - Giới hạn từ nghiêm ngặt: ${activeProfile.maxWords} từ/cảnh. RESPOND IN ${uiLang === 'vi' ? 'VIETNAMESE' : 'ENGLISH'}.`,
         AUDIO_REFINE_PROMPT
       );
       if (res?.refined_scenes) {
@@ -306,15 +336,15 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
             </div>
           </div>
 
-          {/* Dharma topic & Character Mode */}
+          {/* Niche Pillar & Character Mode */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-[#10141c] border border-slate-700/30 rounded-xl p-4 flex flex-col justify-center">
+            <div className="bg-[#10141c] border border-teal-500/20 rounded-xl p-4 flex flex-col justify-center">
               <label className="text-xs font-bold text-teal-400 uppercase mb-2 block flex items-center gap-2">
-                <i className="fa-solid fa-leaf text-teal-400" /> {uiLang === 'vi' ? 'CHỌN PHÂN NGÁCH PHẬT PHÁP' : 'DHARMA SUB-TOPIC'}
+                <i className="fa-solid fa-leaf text-teal-400" /> {uiLang === 'vi' ? 'CHỌN TRỤ CỘT NỘI DUNG' : 'SELECT CONTENT PILLAR'}
               </label>
               <select value={dharmaTopic} onChange={e => setDharmaTopic(e.target.value)}
                 className="w-full bg-[#0a0e14] border border-teal-500/50 rounded-lg p-3 text-sm text-white outline-none cursor-pointer">
-                {DHARMA_TOPICS.map(dt => <option key={dt.id} value={dt.id}>{dt.label}</option>)}
+                {NICHE_PILLARS.map(dt => <option key={dt.id} value={dt.id}>{dt.label}</option>)}
               </select>
             </div>
 
@@ -332,6 +362,22 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
                   <i className="fa-solid fa-users" /> {uiLang === 'vi' ? '2 Nhân Vật (Thay Phiên)' : '2 Characters (Dialogue)'}
                 </button>
               </div>
+            </div>
+          </div>
+
+          {/* Audience pacing profile selector */}
+          <div className="bg-[#10141c] border border-cyan-500/20 rounded-xl p-4">
+            <label className="text-xs font-bold text-cyan-400 uppercase mb-3 block flex items-center gap-2">
+              <i className="fa-solid fa-gauge-high text-cyan-400" /> {uiLang === 'vi' ? 'HỒ SƠ ĐỐI TƯỢNG & NHỊP ĐỘ' : 'AUDIENCE PROFILE & PACING'}
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              {AUDIENCE_PROFILES.map(ap => (
+                <div key={ap.id} onClick={() => setAudienceProfile(ap.id)} title={ap.desc}
+                  className={`cursor-pointer p-3 rounded-xl border flex flex-col justify-between transition-all ${audienceProfile === ap.id ? 'bg-cyan-950/40 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.3)] text-white font-bold' : 'bg-[#0a0e14] border-slate-700/50 hover:border-slate-500 text-slate-400'}`}>
+                  <div className="text-xs leading-tight mb-1">{ap.label}</div>
+                  <div className="text-[10px] opacity-75">{uiLang === 'vi' ? `Tối đa ${ap.maxWords} từ` : `Max ${ap.maxWords} words`}</div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -386,7 +432,7 @@ export default function ScriptModule({ onScriptGenerated, onAudioRefined, initia
               <i className="fa-solid fa-copy" /> {uiLang === 'vi' ? 'Copy Voice Toàn Bộ' : 'Copy Voice All'}
             </button>
           </div>
-          {segments.map((seg, i) => <SceneCard key={i} seg={seg} idx={i} uiLang={uiLang} />)}
+          {segments.map((seg, i) => <SceneCard key={i} seg={seg} idx={i} uiLang={uiLang} audienceProfile={audienceProfile} />)}
         </div>
       )}
     </div>

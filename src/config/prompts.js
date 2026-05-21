@@ -162,8 +162,8 @@ REQUIRED JSON OUTPUT:
 BE SPECIFIC. PROVIDE ACTIONABLE CONTENT. Generate at least 5 viral titles and 2 thumbnail suggestions.`;
 
 export const STYLE_SUGGEST_PROMPT = (lang) => `
-BẠN LÀ CHUYÊN GIA ĐỀ XUẤT PHONG CÁCH NGHỆ THUẬT PHẬT GIÁO & CHỮA LÀNH (LANGUAGE: ${lang}).
-Dựa trên chủ đề kịch bản Phật Pháp được cung cấp, hãy phân tích cảm xúc, bối cảnh và thông điệp cốt lõi, sau đó đề xuất phong cách visual phù hợp nhất từ danh sách bên dưới dưới dạng JSON:
+BẠN LÀ CHUYÊN GIA ĐỀ XUẤT PHONG CÁCH NGHỆ THUẬT PHẬT GIÁO, HOÀI NIỆM & CHỮA LÀNH (LANGUAGE: ${lang}).
+Dựa trên chủ đề kịch bản được cung cấp, hãy phân tích cảm xúc, bối cảnh và thông điệp cốt lõi, sau đó đề xuất phong cách visual phù hợp nhất từ danh sách bên dưới dưới dạng JSON:
 {
   "recommended_style": "style_id",
   "reason": "Giải thích tại sao phong cách này phù hợp với chủ đề và cảm xúc",
@@ -175,63 +175,50 @@ Dựa trên chủ đề kịch bản Phật Pháp được cung cấp, hãy phâ
 }
 
 Các style hợp lệ:
-- ancient_stone_relic: Thánh Tích Khắc Đá - tượng đá cổ, rêu phong, ánh sáng huyền bí
-- molten_gold_nirvana: Niết Bàn Vàng Ròng - vàng nung chảy, hào quang giác ngộ
-- cosmic_yin_yang: Pháp Luân Thiên Hà - vũ trụ âm dương, cân bằng năng lượng
-- zen_ink_wash: Kinh Diệp Lục - lá bồ đề xanh, thiên nhiên tĩnh lặng
-- lotus_ice: Băng Hóa Liên Hoa - hoa sen băng giá, tinh khiết, trong suốt
-- tea_incense: Trà Đạo Khói Trầm - trà đạo, khói trầm hương, tĩnh tại
-- paradise_flowers: Kinh Vạn Hoa Thiên Thai - vạn hoa thiên thai, cảnh tiên, rực rỡ
-- moonlit_lotus: Hồ Sen Trăng Ngọc - hồ sen dưới ánh trăng ngọc bích
-- terracotta_temple: Tượng Đất Nung Thổ - tượng đất nung, gỗ mộc, thiền môn
-- shadow_dance: Vũ Điệu Bóng Rầm - múa bóng, ánh sáng và bóng tối huyền ảo`;
+- co_phong_thuy_mac: Cổ Phong Thủy Mặc (Signature) - Tranh thủy mặc cổ phong, thư pháp Hán, sơn thủy hữu tình — PREMIUM.
+- co_phong_oil_painting: Cổ Phong Sơn Dầu - Tranh sơn dầu cổ phong Trung Hoa, sáng bóng huyền ảo — PREMIUM.
+- thangka_kim_quang: Thangka Kim Quang - Tranh Thangka Tây Tạng kim sa rực rỡ, hào quang vàng ròng — PREMIUM.
+- thangka_animated: Animated Thangka - Tranh cuộn Tây Tạng truyền thống, sống động.
+- nostalgic_cinematic: Nostalgic Cinematic (Signature) - Mộc mạc miền Tây 1990, bếp cà ràng, màu đất ấm, sương khói, mưa quê
+- dawn_of_hope: Bình Minh Hy Vọng (Dream) - Ánh nắng sớm rực rỡ, con đường dài hoài bão, năng lượng tích cực
+- dreamy_solitude: Mơ Mộng Tương Lai (Dream) - Ánh sáng huyền ảo, hào quang ấm áp, tĩnh mịch tâm hồn
+- ancient_stone_relic: Thánh Tích Khắc Đá (Dharma) - tượng đá cổ, rêu phong, ánh sáng đền đài huyền bí
+- molten_gold_nirvana: Niết Bàn Vàng Ròng (Dharma) - vàng nung chảy, hào quang giác ngộ
+- cosmic_yin_yang: Pháp Luân Thiên Hà (Dharma) - vũ trụ âm dương, cân bằng năng lượng
+- zen_ink_wash: Kinh Diệp Lục (Dharma) - lá bồ đề xanh, thiên nhiên tĩnh lặng
+- lotus_ice: Băng Hóa Liên Hoa (Dharma) - hoa sen băng giá, tinh khiết, trong suốt
+- tea_incense: Trà Đạo Khói Trầm (Dharma) - trà đạo, khói trầm hương, tĩnh tại
+- terracotta_temple: Tượng Đất Nung Thổ (Dharma) - tượng đất nung, gỗ mộc, thiền môn
+- shadow_dance: Vũ Điệu Bóng Râm (Dharma) - múa bóng, ánh sáng và bóng tối huyền ảo`;
 
 export const AUDIO_REFINE_PROMPT = `# 👑 MASTER COMMAND V17.0: UNIVERSAL AUDIO RE-ENGINEERING
 
-CHỈ THỊ TỪ CHIEF ARCHITECT (LỆNH TINH CHỈNH ĐỘC LẬP & BẢO TOÀN NGUYÊN TRẠNG):
-"Yêu cầu thực hiện hiệu chỉnh duy nhất phần Thanh âm cho [Cảnh 1 đến Cảnh N]. Hệ thống phải vận hành theo cơ chế 'Phong tỏa Tham số - Tái cấu trúc Hồn'."
+CHỈ THỊ THANH ÂM & BẢO TOÀN NGUYÊN TRẠNG:
+"Thực hiện hiệu chỉnh duy nhất phần Thanh âm cho [Cảnh 1 đến Cảnh N] dựa theo Trụ cột Nội dung và Nhịp độ Đối tượng mục tiêu."
 
 🛑 1. NGUYÊN TẮC PHONG TỎA TUYỆT ĐỐI (UNIVERSAL PRESERVATION)
-GIỮ NGUYÊN 100%: Toàn bộ tiêu đề đề mục và nội dung dữ liệu của TẤT CẢ CÁC MỤC KHÔNG LIÊN QUAN ĐẾN THANH ÂM.
+GIỮ NGUYÊN 100% toàn bộ visual_desc, video_prompt, image_prompt và các nội dung bối cảnh không liên quan đến thanh âm.
 
-🎙️ 2. CHỈ THỊ THANH ÂM THIẾT QUÂN LUẬT (HARDCODED AUDIO)
-Chỉ thực hiện thay đổi nội dung của 3 thành phần thanh âm cốt lõi theo quy tắc thép:
+🎙️ 2. CHỈ THỊ THANH ÂM PHÂN CHIA HỒ SƠ ĐỐI TƯỢNG (AUDIENCE-DRIVEN PACING)
+Mỗi phân cảnh 8 giây chỉ có 01 giọng đọc nói duy nhất. Số lượng từ (Word Count) bắt buộc tuân thủ nghiêm ngặt theo Hồ sơ Đối tượng mục tiêu:
+- Gen Z: Max 20 từ. Giọng điệu năng động, truyền cảm hứng, tiết tấu nhanh, dứt thoại ở giây 7.0 - 7.2.
+- Millennial: Max 18 từ. Giọng điệu ấm áp, tự nhiên, nhịp vừa phải, dứt thoại ở giây 7.2 - 7.4.
+- Gen X: Max 16 từ. Giọng chiêm nghiệm, chậm rãi, trầm ấm, dứt thoại ở giây 7.3 - 7.5.
+- Senior: Max 14 từ. Giọng rất chậm, cung kính, rõ chữ, dứt thoại ở giây 7.4 - 7.6.
+- Dharma Seeker: Max 12 từ. Giọng thiền định, tĩnh lặng tuyệt đối, nhiều khoảng lặng thở sâu, dứt thoại ở giây 7.0 - 7.4 để lại 1 giây im lặng.
 
-Nguyên tắc Độc tôn (100% Single Voice):
-* Trong 8 giây của mỗi phân cảnh, CHỈ DUY NHẤT 01 CHỦ THỂ ĐƯỢC PHÉP CẤT TIẾNG.
+Lời thoại (voice_text) phải súc tích, đắt giá, lột tả sâu sắc Trụ cột Nội dung được chọn:
+- Hồn Quê: Ấm áp, xúc động, tràn ngập hoài niệm làng quê xưa.
+- Future Dream: Tự tin, tràn trề năng lượng, khơi gợi hy vọng và luật hấp dẫn.
+- Dharma Wisdom (Phật Pháp/Tánh Biết): Sâu sắc, thiền vị, nhắc nhở quay về "Tánh Biết" trong lành, quan sát hơi thở và hiện tại mà không phán xét.
 
-Bản đồ Thanh âm Thích ứng (Adaptive Blueprint):
-- Chất giọng (Timbre), Giọng điệu (Tone), Nhịp điệu (Pacing), Vị trí (State: ON-SCREEN/OFF-SCREEN).
+🎵 3. AUDIO LAYERING (3 LỚP ÂM THANH)
+Mỗi scene bắt buộc mô tả chi tiết cả 3 lớp âm thanh:
+- LAYER_1_BED: Nhạc nền (Nhạc thiền 432Hz/528Hz, sáo trúc mộc mạc, guitar mộc mạc quê hương, pad ambient mênh mang).
+- LAYER_2_ENV (ASMR): Tiếng ASMR thực tế (lửa bếp cà ràng cháy tí tách, tiếng ếch nhái kêu đêm quê, tiếng mưa Mekong rơi mái lá, tiếng chuông chùa, gió xào xạc rặng tre).
+- LAYER_3_PUNCTUATION: Điểm chốt cảm xúc (tiếng mõ gõ nhẹ, tiếng chuông đồng nhỏ châm lặng, tiếng thở dài nhẹ nhõm, tiếng chong chóng gió).
 
-Lời thoại Nội lực (voice_text):
-* Viết lại lời thoại súc tích, mang đậm bản sắc nhân vật. Dung lượng: Tuyệt đối <40 từ.
-
-🎭 3. EMOTIONAL ARC MAPPING (MỚI V17)
-Mỗi scene phải có emotional_intensity (1-10) và emotional_tag:
-- 1-3: Tĩnh lặng, chiêm nghiệm (CALM)
-- 4-6: Gợi mở, dẫn dắt (BUILD)
-- 7-8: Cao trào cảm xúc (PEAK)
-- 9-10: Giác ngộ, giải thoát (TRANSCEND)
-
-🔇 4. SILENCE BEATS (KHOẢNG LẶNG CHIẾN LƯỢC)
-- Chèn silence_beat (0.3-0.8s) tại các điểm cảm xúc chuyển giao
-- Trước lời dạy quan trọng: 0.5s silence
-- Sau câu hỏi tu từ: 0.3s silence
-- Kết thúc đoạn cao trào: 0.8s silence
-
-🎵 5. AUDIO LAYERING (3 LỚP ÂM THANH)
-Mỗi scene phải có 3 lớp:
-- LAYER_1_BED: Nhạc nền liên tục (thiền, 432Hz, ambient)
-- LAYER_2_ENV: Âm thanh môi trường ASMR (nước, gió, chim, chuông)
-- LAYER_3_PUNCTUATION: Điểm nhấn cảm xúc (chuông chùa, mõ, tiếng thở)
-
-🔄 6. VOICE TRANSITION RULES
-- Chuyển từ MALE → FEMALE: Chèn tiếng chuông gió nhẹ
-- Chuyển từ ON-SCREEN → OFF-SCREEN: Fade nhạc nền lên 20%
-- Chuyển section mới: Tiếng chuông chùa hoặc tiếng mõ
-- Kết thúc video: Fade out dần 3 giây cuối
-
-📝 7. ĐỊNH DẠNG ĐẦU RA PHỔ QUÁT (MASTER OUTPUT JSON)
+📝 4. ĐỊNH DẠNG ĐẦU RA PHỔ QUÁT (MASTER OUTPUT JSON)
 {
   "refined_scenes": [
     {
@@ -240,27 +227,27 @@ Mỗi scene phải có 3 lớp:
         "speaker": "Tên nhân vật",
         "gender": "MALE hoặc FEMALE",
         "age": "Số tuổi hoặc nhóm tuổi",
-        "accent": "NORTHERN_VIETNAMESE / SOUTHERN_VIETNAMESE / EN-US / EN-UK",
-        "timbre": "Chất giọng",
-        "tone": "Giọng điệu",
-        "pacing": "Nhịp điệu",
-        "pacing_speed": "1.18x",
+        "accent": "NORTHERN_VIETNAMESE / SOUTHERN_VIETNAMESE / SOUTHERN_MEKONG (cho Hồn Quê)",
+        "timbre": "Chất giọng đặc trưng",
+        "tone": "Giọng điệu cảm xúc",
+        "pacing": "Nhịp điệu (Slow/Normal/Fast)",
+        "pacing_speed": "Tốc độ đọc (ví dụ: 1.0x, 0.85x)",
         "state": "ON-SCREEN hoặc OFF-SCREEN"
       },
-      "emotional_intensity": 7,
-      "emotional_tag": "PEAK",
-      "silence_beat": {"position": "before", "duration": "0.5s"},
+      "emotional_intensity": 6,
+      "emotional_tag": "CALM / BUILD / PEAK / TRANSCEND",
+      "silence_beat": {"position": "before / after / middle", "duration": "0.4s"},
       "audio_layers": {
-        "layer_1_bed": "Nhạc thiền 432Hz nhẹ nhàng",
-        "layer_2_env": "Tiếng suối chảy, chim hót xa xa",
-        "layer_3_punctuation": "Tiếng chuông chùa ngân vang"
+        "layer_1_bed": "Nhạc nền cụ thể",
+        "layer_2_env": "Tiếng ASMR môi trường",
+        "layer_3_punctuation": "Điểm nhấn âm thanh hoặc khoảng lặng"
       },
-      "voice_transition": "Fade nhạc nền, chèn tiếng chuông gió",
-      "sfx_music_suggestion": "Đề xuất chi tiết nhạc nền và ASMR/SFX",
-      "voice_text": "Lời thoại duy nhất cho scene này (dưới 40 từ)",
-      "word_count": 35,
+      "voice_transition": "Cách chuyển giọng/nhạc",
+      "sfx_music_suggestion": "Chuỗi văn bản mô tả 3 lớp: LAYER 1: [bed] | LAYER 2: [env] | LAYER 3: [punctuation]",
+      "voice_text": "Lời thoại duy nhất (PHẢI DƯỚI giới hạn từ của Đối tượng mục tiêu)",
+      "word_count": 14,
       "audio_end_time": "7.3s"
     }
   ]
 }
-LƯU Ý JSON: Bắt buộc trả về mảng refined_scenes chứa đủ số lượng scene của đầu vào.`;
+LƯU Ý: Tuyệt đối không thay đổi bất kỳ trường visual_desc nào của đầu vào. Trả về đúng số lượng scene.`;

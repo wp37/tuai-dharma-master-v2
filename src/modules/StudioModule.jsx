@@ -47,10 +47,17 @@ export default function StudioModule({ segments, topic = '', uiLang }) {
   const slug = (topic||'script').replace(/\s+/g,'_');
 
   const expCSV = () => {
-    let c = '\uFEFFScene,Time,Section,Character,Voice,Speaker,Gender,Age,Accent,Timbre,Tone,Pacing,Speed,Words,End Time,State,Audio SFX ASMR Music,Video Prompt,Image Prompt\n';
+    let c = '\uFEFFScene,Time,Section,Character,Voice,Speaker,Gender,Age,Accent,Timbre,Tone,Pacing,Speed,Words,End Time,State,Audio Layer 1 Bed,Audio Layer 2 Env,Audio Layer 3 Punc,Audio SFX ASMR Music,Video Prompt,Image Prompt\n';
     segments.forEach((s, i) => {
       const vp = s.voice_profile || {};
-      c += `${i+1},"${s.time||''}","${s.section||''}","${(s.character||'').replace(/"/g,'""')}","${(s.voice_text||'').replace(/"/g,'""')}","${(vp.speaker||s.character||'').replace(/"/g,'""')}","${vp.gender||''}","${vp.age||''}","${vp.accent||''}","${vp.timbre||''}","${vp.tone||''}","${vp.pacing||''}","${vp.pacing_speed||''}","${s.word_count||''}","${s.audio_end_time||''}","${vp.state||''}","${(s.sfx_music_suggestion||'').replace(/"/g,'""')}","${(s.video_prompt||'').replace(/"/g,'""')}","${(s.image_prompt||'').replace(/"/g,'""')}"\n`;
+      const l1 = s.audio_layers?.layer_1_bed || '';
+      const l2 = s.audio_layers?.layer_2_env || '';
+      const l3 = s.audio_layers?.layer_3_punctuation || '';
+      const voice = s.dialogues && s.dialogues.length > 0
+        ? s.dialogues.map(d => `${d.character_name}: ${d.line}`).join(' | ')
+        : s.voice_text || s.chapter_voice_block || '';
+
+      c += `${i+1},"${s.time||''}","${s.section||''}","${(s.character||'').replace(/"/g,'""')}","${voice.replace(/"/g,'""')}","${(vp.speaker||s.character||'').replace(/"/g,'""')}","${vp.gender||''}","${vp.age||''}","${vp.accent||''}","${vp.timbre||''}","${vp.tone||''}","${vp.pacing||''}","${vp.pacing_speed||''}","${s.word_count||''}","${s.audio_end_time||''}","${vp.state||''}","${l1.replace(/"/g,'""')}","${l2.replace(/"/g,'""')}","${l3.replace(/"/g,'""')}","${(s.sfx_music_suggestion||'').replace(/"/g,'""')}","${(s.video_prompt||'').replace(/"/g,'""')}","${(s.image_prompt||'').replace(/"/g,'""')}"\n`;
     });
     dl(c, `${slug}_kich_ban_${getTimestamp()}.csv`, 'text/csv;charset=utf-8;');
     setMenu(false);
@@ -87,6 +94,64 @@ export default function StudioModule({ segments, topic = '', uiLang }) {
     setMenu(false);
   };
 
+  // Sound Design Sheet Exports
+  const expSoundCSV = () => {
+    let c = '\uFEFFScene,Time,Speaker,Voice Text,Layer 1 (Bed),Layer 2 (ASMR Env),Layer 3 (Punctuation),Suggested Audio SFX\n';
+    segments.forEach((s, i) => {
+      const vp = s.voice_profile || {};
+      const layer1 = s.audio_layers?.layer_1_bed || '';
+      const layer2 = s.audio_layers?.layer_2_env || '';
+      const layer3 = s.audio_layers?.layer_3_punctuation || '';
+      const voice = s.dialogues && s.dialogues.length > 0
+        ? s.dialogues.map(d => `${d.character_name}: ${d.line}`).join(' | ')
+        : s.voice_text || s.chapter_voice_block || '';
+
+      c += `${i+1},"${s.time||''}","${(vp.speaker||s.character||'Dẫn chuyện').replace(/"/g,'""')}","${voice.replace(/"/g,'""')}","${layer1.replace(/"/g,'""')}","${layer2.replace(/"/g,'""')}","${layer3.replace(/"/g,'""')}","${(s.sfx_music_suggestion||'').replace(/"/g,'""')}"\n`;
+    });
+    dl(c, `${slug}_phoi_am_3_lop_${getTimestamp()}.csv`, 'text/csv;charset=utf-8;');
+    setMenu(false);
+  };
+
+  const expSoundTXT = () => {
+    let txt = `=======================================================\n`;
+    txt += `🎵 BẢN HƯỚNG DẪN PHỐI ÂM 3 LỚP (SOUND DESIGN SHEET)\n`;
+    txt += `Chủ đề: ${topic || 'Không tên'}\n`;
+    txt += `Thời gian xuất: ${new Date().toLocaleString()}\n`;
+    txt += `=======================================================\n\n`;
+
+    segments.forEach((s, i) => {
+      const vp = s.voice_profile || {};
+      const voice = s.dialogues && s.dialogues.length > 0
+        ? s.dialogues.map(d => `${d.character_name}: "${d.line}"`).join('\n   ')
+        : `"${s.voice_text || s.chapter_voice_block || ''}"`;
+
+      txt += `🎬 PHÂN CẢNH ${i+1} [Thời gian: ${s.time || '8s'} | Phân đoạn: ${s.section || 'N/A'}]\n`;
+      txt += `-------------------------------------------------------\n`;
+      txt += `🎙️ GIỌNG ĐỌC (VOICE & DIALOGUE):\n`;
+      txt += `   - Nhân vật/Giọng: ${vp.speaker || s.character || 'Dẫn chuyện'}\n`;
+      txt += `   - Đặc điểm: Giới tính: ${vp.gender || 'N/A'} | Tuổi: ${vp.age || 'N/A'} | Vùng miền: ${vp.accent || 'N/A'}\n`;
+      txt += `   - Chất giọng: ${vp.timbre || 'N/A'} | Cảm xúc: ${vp.tone || 'N/A'} | Tốc độ: ${vp.pacing_speed || vp.pacing || 'Normal'}\n`;
+      txt += `   - Lời thoại:\n   ${voice}\n\n`;
+
+      txt += `🔊 PHỐI ÂM 3 LỚP (3-LAYER SOUND DESIGN):\n`;
+      if (s.audio_layers) {
+        txt += `   🔹 Layer 1 (Bed - Nhạc nền): ${s.audio_layers.layer_1_bed || 'Nhạc thiền ambient/quê hương nhẹ nhàng'}\n`;
+        txt += `   🔹 Layer 2 (Env - ASMR môi trường): ${s.audio_layers.layer_2_env || 'Môi trường ASMR'}\n`;
+        txt += `   🔹 Layer 3 (Punc - Chuông mõ điểm nhấn): ${s.audio_layers.layer_3_punctuation || 'Chuông mõ thiền vị'}\n`;
+      } else {
+        txt += `   🔹 Gợi ý âm thanh chung: ${s.sfx_music_suggestion || 'N/A'}\n`;
+      }
+      txt += `   🔹 Kết thúc thoại ở: ${s.audio_end_time || 'N/A'}\n\n`;
+
+      txt += `🖼️ BỐI CẢNH HÌNH ẢNH (VISUAL):\n`;
+      txt += `   - Mô tả: ${s.visual_desc_vi || s.visual_desc || 'N/A'}\n`;
+      txt += `=======================================================\n\n`;
+    });
+
+    dl(txt, `${slug}_phoi_am_3_lop_${getTimestamp()}.txt`, 'text/plain;charset=utf-8;');
+    setMenu(false);
+  };
+
   if (!segments.length) return (
     <div className="h-full flex items-center justify-center">
       <p className="text-slate-500 italic">{uiLang === 'vi' ? 'Chưa có dữ liệu kịch bản. Hãy tạo kịch bản trước.' : 'No script data. Create a script first.'}</p>
@@ -112,9 +177,13 @@ export default function StudioModule({ segments, topic = '', uiLang }) {
             <button onClick={()=>setMenu(!menu)} className="px-4 py-1.5 rounded text-xs font-bold flex items-center gap-2 bg-green-900/40 text-green-300 border border-green-500/20">
               <i className="fa-solid fa-download"/> {uiLang === 'vi' ? 'Tải' : 'Export'} ▾
             </button>
-            {menu&&<div className="absolute right-0 top-full mt-2 w-52 bg-[#12161e] border border-slate-700/30 rounded-xl shadow-xl z-50 overflow-hidden">
+            {menu&&<div className="absolute right-0 top-full mt-2 w-64 bg-[#12161e] border border-slate-700/30 rounded-xl shadow-xl z-50 overflow-hidden">
               <button onClick={expJSON} className="w-full text-left px-4 py-2.5 text-xs text-amber-300 hover:bg-slate-800/30 border-b border-slate-700/30 flex items-center gap-2"><i className="fa-solid fa-file-code text-amber-500"/>{uiLang === 'vi' ? 'Tải Dự Án (.json)' : 'Project (.json)'}</button>
-              <button onClick={expCSV} className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-800/30 border-b border-slate-700/30 flex items-center gap-2"><i className="fa-solid fa-file-excel text-green-500"/>{uiLang === 'vi' ? 'Excel Kịch Bản' : 'Excel Script'}</button>
+              <button onClick={expCSV} className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-800/30 border-b border-slate-700/30 flex items-center gap-2"><i className="fa-solid fa-file-excel text-green-500"/>{uiLang === 'vi' ? 'Excel Kịch Bản (Bao gồm phối âm)' : 'Excel Script'}</button>
+              
+              <button onClick={expSoundCSV} className="w-full text-left px-4 py-2.5 text-xs text-cyan-300 hover:bg-slate-800/30 border-b border-slate-700/30 flex items-center gap-2"><i className="fa-solid fa-table-cells text-cyan-400"/>{uiLang === 'vi' ? 'Excel Phối Âm 3 Lớp' : 'Excel Sound Design'}</button>
+              <button onClick={expSoundTXT} className="w-full text-left px-4 py-2.5 text-xs text-cyan-300 hover:bg-slate-800/30 border-b border-slate-700/30 flex items-center gap-2"><i className="fa-solid fa-file-lines text-cyan-400"/>{uiLang === 'vi' ? 'TXT Phối Âm 3 Lớp' : 'TXT Sound Design'}</button>
+
               <button onClick={expPromptVideoCSV} className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-800/30 border-b border-slate-700/30 flex items-center gap-2"><i className="fa-solid fa-file-excel text-green-500"/>{uiLang === 'vi' ? 'Excel Prompt Video' : 'Excel Video Prompts'}</button>
               <button onClick={expPromptImageCSV} className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-800/30 border-b border-slate-700/30 flex items-center gap-2"><i className="fa-solid fa-file-excel text-green-500"/>{uiLang === 'vi' ? 'Excel Prompt Ảnh' : 'Excel Image Prompts'}</button>
               <button onClick={expPromptVideoTXT} className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-800/30 border-b border-slate-700/30 flex items-center gap-2"><i className="fa-solid fa-file-lines text-blue-400"/>{uiLang === 'vi' ? 'TXT Prompt Video' : 'TXT Video Prompts'}</button>
